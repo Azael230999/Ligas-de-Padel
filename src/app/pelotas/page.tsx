@@ -7,7 +7,7 @@ import {
   getJornadasHistorialPelotas,
   getJornadasProximasPelotas,
 } from "@/lib/data";
-import { READ_ONLY } from "@/lib/readonly";
+import { isAdmin } from "@/lib/auth";
 
 export default async function PelotasPage({
   searchParams,
@@ -15,10 +15,11 @@ export default async function PelotasPage({
   searchParams: Promise<{ jornada?: string }>;
 }) {
   const { jornada: jornadaParam } = await searchParams;
-  const [proximas, historial, { conteo, jugadas }] = await Promise.all([
+  const [proximas, historial, { conteo, jugadas }, admin] = await Promise.all([
     getJornadasProximasPelotas(),
     getJornadasHistorialPelotas(),
     calcularBalancePelotas(),
+    isAdmin(),
   ]);
 
   const jornadaActual = proximas.find((j) => j.nombre === jornadaParam) ?? proximas[0];
@@ -77,7 +78,7 @@ export default async function PelotasPage({
             <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: COLORS.limaSoft }}>
               Participantes de esta jornada
             </p>
-            {!READ_ONLY && (
+            {admin && (
               <form action={aplicarSugerenciaPelotas}>
                 <input type="hidden" name="jornadaId" value={jornadaActual.id} />
                 <button type="submit" className="text-[11px] font-bold underline" style={{ color: COLORS.lima }}>
@@ -106,7 +107,7 @@ export default async function PelotasPage({
                 </>
               );
 
-              if (READ_ONLY) {
+              if (!admin) {
                 return (
                   <div key={p.id} className="px-3 py-2 rounded-xl flex items-center gap-1.5" style={chipStyle}>
                     {chipContent}

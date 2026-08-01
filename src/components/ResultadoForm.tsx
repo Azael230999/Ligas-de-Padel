@@ -1,10 +1,17 @@
 import { crearResultado } from "@/app/actions";
 import { COLORS } from "@/lib/colors";
 import { Rotacion } from "@/lib/pairings";
-import { READ_ONLY } from "@/lib/readonly";
 
-export function ResultadoForm({ grupoId, rotaciones }: { grupoId: number; rotaciones: Rotacion[] }) {
-  if (READ_ONLY || rotaciones.length === 0) return null;
+export function ResultadoForm({
+  grupoId,
+  rotaciones,
+  admin,
+}: {
+  grupoId: number;
+  rotaciones: Rotacion[];
+  admin: boolean;
+}) {
+  if (!admin || rotaciones.length === 0) return null;
 
   return (
     <details className="rounded-2xl overflow-hidden" style={{ border: `1px dashed ${COLORS.linea}` }}>

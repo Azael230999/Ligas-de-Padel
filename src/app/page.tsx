@@ -1,9 +1,11 @@
 import { Trophy, Users } from "lucide-react";
+import { seedInitialData } from "@/app/actions";
 import { Chip } from "@/components/Chip";
 import { ResultadoForm } from "@/components/ResultadoForm";
 import { COLORS } from "@/lib/colors";
 import { getGruposDeJornada, getJornadasConGrupos } from "@/lib/data";
 import { pairingsDeCuatro, rotacionYaJugada } from "@/lib/pairings";
+import { isAdmin } from "@/lib/auth";
 
 export default async function PrincipalPage({
   searchParams,
@@ -11,13 +13,24 @@ export default async function PrincipalPage({
   searchParams: Promise<{ jornada?: string }>;
 }) {
   const { jornada: jornadaParam } = await searchParams;
-  const jornadas = await getJornadasConGrupos();
+  const [jornadas, admin] = await Promise.all([getJornadasConGrupos(), isAdmin()]);
   if (jornadas.length === 0) {
     return (
       <div className="px-5 pt-6 pb-24">
-        <p className="text-sm" style={{ color: COLORS.limaSoft }}>
+        <p className="text-sm mb-4" style={{ color: COLORS.limaSoft }}>
           Todavía no hay jornadas con grupos armados.
         </p>
+        {admin && (
+          <form action={seedInitialData}>
+            <button
+              type="submit"
+              className="rounded-xl px-4 py-2.5 text-sm font-black"
+              style={{ background: COLORS.lima, color: COLORS.tinta }}
+            >
+              Cargar datos de ejemplo
+            </button>
+          </form>
+        )}
       </div>
     );
   }
@@ -120,7 +133,7 @@ export default async function PrincipalPage({
                   </div>
                 ))
               )}
-              <ResultadoForm grupoId={grupo.id} rotaciones={rotaciones} />
+              <ResultadoForm grupoId={grupo.id} rotaciones={rotaciones} admin={admin} />
             </div>
           );
         })}

@@ -1,12 +1,56 @@
 "use server";
 
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { calcularBalancePelotas, sugerirAsignados } from "@/lib/data";
-import { READ_ONLY } from "@/lib/readonly";
+import { ADMIN_COOKIE, isAdmin, tokenForPassword } from "@/lib/auth";
+import { runSeed } from "@/lib/seedData";
+
+async function requireAdmin() {
+  if (!(await isAdmin())) throw new Error("Necesitas iniciar sesión como admin para hacer esto.");
+}
+
+export async function seedInitialData() {
+  await requireAdmin();
+  const existentes = await prisma.jugador.count();
+  if (existentes > 0) throw new Error("La base ya tiene datos, no se vuelve a sembrar.");
+
+  await runSeed(prisma);
+  revalidatePath("/");
+  revalidatePath("/ranking");
+  revalidatePath("/pelotas");
+}
+
+export async function login(formData: FormData) {
+  const password = String(formData.get("password") ?? "");
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminPassword || password !== adminPassword) {
+    redirect("/login?error=1");
+  }
+
+  const jar = await cookies();
+  jar.set(ADMIN_COOKIE, tokenForPassword(adminPassword), {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+
+  redirect("/");
+}
+
+export async function logout() {
+  const jar = await cookies();
+  jar.delete(ADMIN_COOKIE);
+  redirect("/");
+}
 
 export async function toggleAsignacionPelotas(formData: FormData) {
-  if (READ_ONLY) throw new Error("Esta versión es de solo lectura.");
+  await requireAdmin();
   const jornadaId = Number(formData.get("jornadaId"));
   const jugadorId = Number(formData.get("jugadorId"));
 
@@ -26,7 +70,7 @@ export async function toggleAsignacionPelotas(formData: FormData) {
 }
 
 export async function aplicarSugerenciaPelotas(formData: FormData) {
-  if (READ_ONLY) throw new Error("Esta versión es de solo lectura.");
+  await requireAdmin();
   const jornadaId = Number(formData.get("jornadaId"));
 
   const jornada = await prisma.jornada.findUniqueOrThrow({
@@ -51,7 +95,7 @@ export async function aplicarSugerenciaPelotas(formData: FormData) {
 }
 
 export async function crearResultado(formData: FormData) {
-  if (READ_ONLY) throw new Error("Esta versión es de solo lectura.");
+  await requireAdmin();
   const grupoId = Number(formData.get("grupoId"));
   const rotacion = String(formData.get("rotacion") ?? "");
   const gamesPareja1 = Number(formData.get("gamesPareja1"));

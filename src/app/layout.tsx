@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { COLORS } from "@/lib/colors";
 import { TabBar } from "@/components/TabBar";
-import { READ_ONLY } from "@/lib/readonly";
+import { isAdmin } from "@/lib/auth";
+import { logout } from "@/app/actions";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -9,7 +11,9 @@ export const metadata: Metadata = {
   description: "Seguimiento de jornadas, ranking y rol de pelotas de la liga de pádel.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const admin = await isAdmin();
+
   return (
     <html lang="es">
       <body className="antialiased">
@@ -35,11 +39,22 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               </div>
             </div>
 
-            {READ_ONLY && (
-              <div className="mx-5 mb-2 rounded-lg px-3 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide" style={{ background: COLORS.canchaAlt, color: COLORS.limaSoft }}>
-                Solo lectura
-              </div>
-            )}
+            <div className="mx-5 mb-2 rounded-lg px-3 py-1.5 flex items-center justify-between" style={{ background: COLORS.canchaAlt }}>
+              <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: COLORS.limaSoft }}>
+                {admin ? "Modo admin" : "Solo lectura"}
+              </span>
+              {admin ? (
+                <form action={logout}>
+                  <button type="submit" className="text-[10px] font-bold underline" style={{ color: COLORS.lima }}>
+                    Salir
+                  </button>
+                </form>
+              ) : (
+                <Link href="/login" className="text-[10px] font-bold underline" style={{ color: COLORS.lima }}>
+                  Entrar como admin
+                </Link>
+              )}
+            </div>
 
             <div style={{ minHeight: "70vh" }}>{children}</div>
 
