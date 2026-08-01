@@ -70,9 +70,16 @@ export function PlayerProfileModal({ jornadas, nombre, stats, onClose }) {
                 className="rounded-xl px-3.5 py-3"
                 style={{ background: COLORS.canchaAlt, border: `1px solid ${COLORS.linea}` }}
               >
-                <p className="text-xs font-bold mb-1" style={{ color: COLORS.lima }}>
-                  {h.jornadaNombre} · {h.grupo}
-                </p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs font-bold" style={{ color: COLORS.lima }}>
+                    {h.jornadaNombre} · {h.grupo}
+                  </p>
+                  {(h.esInvitado || !h.puntuable) && (
+                    <span className="text-[10px] font-bold" style={{ color: COLORS.limaSoft }}>
+                      {h.esInvitado ? "Invitado" : "No puntuable"}
+                    </span>
+                  )}
+                </div>
                 <p className="text-[11px] mb-1.5" style={{ color: COLORS.limaSoft }}>
                   Con {h.companeros.join(", ") || "—"}
                 </p>

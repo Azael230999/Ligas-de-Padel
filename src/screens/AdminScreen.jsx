@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, Shuffle, Trash2, Users } from "lucide-react";
+import { Clock, Download, Shuffle, Tag, Trash2, Users } from "lucide-react";
 import { COLORS } from "../colors";
 import {
   agregarParticipante,
@@ -12,6 +12,8 @@ import {
   exportarDatos,
   jugadoresConocidos,
   quitarParticipante,
+  toggleInvitado,
+  toggleTardanza,
   ultimaTemporada,
 } from "../data";
 import { useToast } from "../toast";
@@ -301,6 +303,18 @@ function JornadaAdminCard({ jornada, conocidos, jornadas }) {
       .catch(() => showToast("No se pudo quitar al participante.", "error"));
   };
 
+  const handleToggleInvitado = (nombre, esInvitado) => {
+    toggleInvitado(jornada.id, nombre, esInvitado)
+      .then(() => showToast(esInvitado ? "Ya no es invitado ✓" : "Marcado como invitado ✓"))
+      .catch(() => showToast("No se pudo actualizar.", "error"));
+  };
+
+  const handleToggleTardanza = (nombre, esTarde) => {
+    toggleTardanza(jornada.id, nombre, esTarde)
+      .then(() => showToast(esTarde ? "Ya no llegó tarde ✓" : "Marcado como tarde ✓"))
+      .catch(() => showToast("No se pudo actualizar.", "error"));
+  };
+
   return (
     <div className="rounded-2xl p-4" style={{ background: COLORS.canchaAlt, border: `1px solid ${COLORS.linea}` }}>
       <div className="flex items-center justify-between mb-2">
@@ -320,18 +334,39 @@ function JornadaAdminCard({ jornada, conocidos, jornadas }) {
       <p className="text-[11px] font-bold uppercase tracking-wide mb-1.5" style={{ color: COLORS.limaSoft }}>
         Participantes ({(jornada.participantes || []).length})
       </p>
+      <p className="text-[10px] mb-1.5" style={{ color: COLORS.limaSoft }}>
+        Toca <Tag size={9} className="inline" /> invitado o <Clock size={9} className="inline" /> llegó tarde para
+        marcarlo (afecta sus puntos).
+      </p>
       <div className="flex flex-wrap gap-2 mb-2">
-        {(jornada.participantes || []).map((p) => (
-          <button
-            key={p}
-            onClick={() => handleQuitarParticipante(p)}
-            className="px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1"
-            style={{ background: COLORS.cancha, color: COLORS.crema }}
-            title="Quitar"
-          >
-            {p} <span style={{ color: COLORS.limaSoft }}>×</span>
-          </button>
-        ))}
+        {(jornada.participantes || []).map((p) => {
+          const esInvitado = (jornada.invitados || []).includes(p);
+          const esTarde = (jornada.tardanzas || []).includes(p);
+          return (
+            <div
+              key={p}
+              className="pl-3 pr-1.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5"
+              style={{ background: COLORS.cancha, color: COLORS.crema }}
+            >
+              <span>{p}</span>
+              <button
+                onClick={() => handleToggleInvitado(p, esInvitado)}
+                title={esInvitado ? "Quitar marca de invitado" : "Marcar como invitado (no es miembro de la Liga)"}
+              >
+                <Tag size={12} color={esInvitado ? "#F5C242" : COLORS.limaSoft} fill={esInvitado ? "#F5C242" : "none"} />
+              </button>
+              <button
+                onClick={() => handleToggleTardanza(p, esTarde)}
+                title={esTarde ? "Quitar marca de tardanza" : "Marcar que llegó tarde (pierde el bono de asistencia)"}
+              >
+                <Clock size={12} color={esTarde ? "#F59E42" : COLORS.limaSoft} fill={esTarde ? "#F59E42" : "none"} />
+              </button>
+              <button onClick={() => handleQuitarParticipante(p)} title="Quitar">
+                <span style={{ color: COLORS.limaSoft }}>×</span>
+              </button>
+            </div>
+          );
+        })}
       </div>
       <form onSubmit={handleAgregar} className="flex gap-2 mb-1">
         <input

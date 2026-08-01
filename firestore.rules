@@ -13,7 +13,7 @@ service cloud.firestore {
     function jornadaValida(datos) {
       return datos.keys().hasOnly(
           ['nombre', 'orden', 'canchas', 'participantes', 'grupos', 'resultados', 'pelotasAsignados',
-           'fecha', 'temporada']
+           'fecha', 'temporada', 'invitados', 'tardanzas']
         )
         && datos.nombre is string
         && datos.orden is number
@@ -23,7 +23,9 @@ service cloud.firestore {
         && (!('resultados' in datos) || datos.resultados is map)
         && (!('pelotasAsignados' in datos) || datos.pelotasAsignados is list)
         && (!('fecha' in datos) || datos.fecha is string)
-        && (!('temporada' in datos) || datos.temporada is string);
+        && (!('temporada' in datos) || datos.temporada is string)
+        && (!('invitados' in datos) || datos.invitados is list)
+        && (!('tardanzas' in datos) || datos.tardanzas is list);
     }
 
     // Cualquiera puede ver las jornadas (link de solo lectura). Solo un

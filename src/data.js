@@ -73,6 +73,27 @@ export async function aplicarSugerenciaPelotas(jornadaId, sugeridos) {
   await updateDoc(ref, { pelotasAsignados: sugeridos });
 }
 
+// Invitado: no es miembro de la Liga, así que nunca suma puntos/asistencia
+// (aunque sí puede jugar). Si una cancha llega a tener 2 o más invitados,
+// esa cancha completa deja de ser puntuable para todos (regla del
+// reglamento) — eso se aplica en calcularRanking, aquí solo se guarda
+// quién es invitado esa jornada.
+export async function toggleInvitado(jornadaId, jugador, esInvitado) {
+  const ref = doc(db, "jornadas", jornadaId);
+  await updateDoc(ref, {
+    invitados: esInvitado ? arrayRemove(jugador) : arrayUnion(jugador),
+  });
+}
+
+// Tardanza: llegar tarde le quita el bono de asistencia (+2) de esa
+// jornada, pero no afecta sus games ni si cuenta como jornada jugada.
+export async function toggleTardanza(jornadaId, jugador, yaTarde) {
+  const ref = doc(db, "jornadas", jornadaId);
+  await updateDoc(ref, {
+    tardanzas: yaTarde ? arrayRemove(jugador) : arrayUnion(jugador),
+  });
+}
+
 export function jugadoresConocidos(jornadas) {
   const nombres = new Set();
   for (const j of jornadas) {
@@ -191,24 +212,37 @@ export async function seedInitialData() {
 export function calcularRanking(jornadas) {
   const stats = new Map();
   const asegurar = (nombre) => {
-    if (!stats.has(nombre)) stats.set(nombre, { diffGames: 0, jornadas: new Set(), rondas: 0 });
+    if (!stats.has(nombre)) stats.set(nombre, { diffGames: 0, jornadas: new Set(), rondas: 0, asistencia: 0 });
     return stats.get(nombre);
   };
 
   for (const jornada of jornadasConGrupos(jornadas)) {
+    const invitados = jornada.invitados || [];
+    const tardanzas = jornada.tardanzas || [];
     for (const [grupo, jugadores] of Object.entries(jornada.grupos)) {
+      // Con 2 o más invitados en la misma cancha, esa cancha deja de ser
+      // puntuable para todos (miembros incluidos), tal como marca el
+      // reglamento.
+      const invitadosEnGrupo = jugadores.filter((j) => invitados.includes(j));
+      if (invitadosEnGrupo.length >= 2) continue;
+
       for (const j of jugadores) {
-        asegurar(j).jornadas.add(jornada.id);
+        if (invitados.includes(j)) continue; // un invitado nunca suma puntos/asistencia
+        const s = asegurar(j);
+        s.jornadas.add(jornada.id);
+        if (!tardanzas.includes(j)) s.asistencia += 2; // llegar tarde pierde el bono
       }
       const rondas = (jornada.resultados && jornada.resultados[grupo]) || [];
       for (const r of rondas) {
         const [g1, g2] = r.marcador.split("/").map(Number);
         for (const p of r.pareja1) {
+          if (invitados.includes(p)) continue;
           const s = asegurar(p);
           s.diffGames += g1 - g2;
           s.rondas += 1;
         }
         for (const p of r.pareja2) {
+          if (invitados.includes(p)) continue;
           const s = asegurar(p);
           s.diffGames += g2 - g1;
           s.rondas += 1;
@@ -218,17 +252,14 @@ export function calcularRanking(jornadas) {
   }
 
   return Array.from(stats.entries())
-    .map(([nombre, s]) => {
-      const asistencia = s.jornadas.size * 2;
-      return {
-        nombre,
-        diffGames: s.diffGames,
-        asistencia,
-        rondas: s.rondas,
-        jornadasJugadas: s.jornadas.size,
-        pts: s.diffGames + asistencia,
-      };
-    })
+    .map(([nombre, s]) => ({
+      nombre,
+      diffGames: s.diffGames,
+      asistencia: s.asistencia,
+      rondas: s.rondas,
+      jornadasJugadas: s.jornadas.size,
+      pts: s.diffGames + s.asistencia,
+    }))
     .sort((a, b) => b.pts - a.pts);
 }
 
@@ -279,12 +310,15 @@ export function perfilJugador(jornadas, nombre) {
       if (!jugadores.includes(nombre)) continue;
       const rondas = (jornada.resultados && jornada.resultados[grupo]) || [];
       const partidos = rondas.filter((r) => r.pareja1.includes(nombre) || r.pareja2.includes(nombre));
+      const invitadosEnGrupo = jugadores.filter((j) => (jornada.invitados || []).includes(j));
       historial.push({
         jornadaId: jornada.id,
         jornadaNombre: jornada.nombre,
         grupo,
         companeros: jugadores.filter((j) => j !== nombre),
         partidos,
+        esInvitado: (jornada.invitados || []).includes(nombre),
+        puntuable: invitadosEnGrupo.length < 2,
       });
     }
   }
