@@ -1,0 +1,98 @@
+// Prisma schema for Ligas de Padel
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Jugador {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+
+  participaciones     JornadaParticipante[]
+  gruposJugador       GrupoJugador[]
+  partidosJugador     PartidoJugador[]
+  pelotasAsignaciones PelotasAsignacion[]
+}
+
+model Jornada {
+  id      Int    @id @default(autoincrement())
+  nombre  String @unique
+  orden   Int    @unique
+  canchas Int
+
+  participantes JornadaParticipante[]
+  grupos        Grupo[]
+  pelotas       PelotasAsignacion[]
+}
+
+model JornadaParticipante {
+  id        Int @id @default(autoincrement())
+  jornadaId Int
+  jugadorId Int
+
+  jornada Jornada @relation(fields: [jornadaId], references: [id], onDelete: Cascade)
+  jugador Jugador @relation(fields: [jugadorId], references: [id], onDelete: Cascade)
+
+  @@unique([jornadaId, jugadorId])
+}
+
+model Grupo {
+  id        Int    @id @default(autoincrement())
+  jornadaId Int
+  nombre    String
+
+  jornada   Jornada        @relation(fields: [jornadaId], references: [id], onDelete: Cascade)
+  jugadores GrupoJugador[]
+  partidos  Partido[]
+
+  @@unique([jornadaId, nombre])
+}
+
+model GrupoJugador {
+  id        Int @id @default(autoincrement())
+  grupoId   Int
+  jugadorId Int
+
+  grupo   Grupo   @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  jugador Jugador @relation(fields: [jugadorId], references: [id], onDelete: Cascade)
+
+  @@unique([grupoId, jugadorId])
+}
+
+model Partido {
+  id           Int @id @default(autoincrement())
+  grupoId      Int
+  gamesPareja1 Int
+  gamesPareja2 Int
+
+  grupo     Grupo            @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  jugadores PartidoJugador[]
+}
+
+model PartidoJugador {
+  id        Int @id @default(autoincrement())
+  partidoId Int
+  jugadorId Int
+  pareja    Int // 1 o 2
+
+  partido Partido @relation(fields: [partidoId], references: [id], onDelete: Cascade)
+  jugador Jugador @relation(fields: [jugadorId], references: [id], onDelete: Cascade)
+
+  @@unique([partidoId, jugadorId])
+}
+
+model PelotasAsignacion {
+  id        Int @id @default(autoincrement())
+  jornadaId Int
+  jugadorId Int
+
+  jornada Jornada @relation(fields: [jornadaId], references: [id], onDelete: Cascade)
+  jugador Jugador @relation(fields: [jugadorId], references: [id], onDelete: Cascade)
+
+  @@unique([jornadaId, jugadorId])
+}
