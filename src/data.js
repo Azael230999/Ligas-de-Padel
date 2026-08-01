@@ -220,6 +220,20 @@ export function calcularBalancePelotas(jornadas) {
   return { conteo, jugadas };
 }
 
+// Respaldo manual: descarga todas las jornadas tal cual están en Firestore
+// como un archivo .json, por si algo sale mal y se necesita restaurar a mano.
+export function exportarDatos(jornadas) {
+  const contenido = JSON.stringify(jornadas, null, 2);
+  const blob = new Blob([contenido], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement("a");
+  const fecha = new Date().toISOString().slice(0, 10);
+  enlace.href = url;
+  enlace.download = `respaldo-jornadas-${fecha}.json`;
+  enlace.click();
+  URL.revokeObjectURL(url);
+}
+
 export function sugerirAsignados(participantes, canchas, conteo) {
   const orden = [...participantes].sort((a, b) => {
     const diff = (conteo[a] || 0) - (conteo[b] || 0);

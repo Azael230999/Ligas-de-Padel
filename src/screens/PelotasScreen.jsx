@@ -10,12 +10,14 @@ import {
   sugerirAsignados,
   toggleAsignacionPelotas,
 } from "../data";
+import { useToast } from "../toast";
 
 export function PelotasScreen({ jornadas, admin }) {
   const asignables = jornadasPelotasPendientes(jornadas);
   const historial = jornadasHistorialPelotas(jornadas);
   const { conteo, jugadas } = calcularBalancePelotas(jornadas);
   const [jornadaNombre, setJornadaNombre] = useState(null);
+  const showToast = useToast();
 
   const jornadaActual = asignables.find((j) => j.nombre === jornadaNombre) ?? asignables[0];
   const asignados = new Set(jornadaActual?.pelotasAsignados || []);
@@ -84,7 +86,9 @@ export function PelotasScreen({ jornadas, admin }) {
                 style={{ color: COLORS.lima }}
                 onClick={() => {
                   const sugeridos = sugerirAsignados(jornadaActual.participantes, jornadaActual.canchas, conteo);
-                  aplicarSugerenciaPelotas(jornadaActual.id, sugeridos).catch(() => {});
+                  aplicarSugerenciaPelotas(jornadaActual.id, sugeridos)
+                    .then(() => showToast("Sugerencia aplicada ✓"))
+                    .catch(() => showToast("No se pudo aplicar la sugerencia.", "error"));
                 }}
               >
                 Usar sugerencia
@@ -119,12 +123,19 @@ export function PelotasScreen({ jornadas, admin }) {
                 );
               }
 
+              const handleToggle = () => {
+                if (asignado && !confirm(`¿Quitar a "${p}" del rol de pelotas de esta jornada?`)) return;
+                toggleAsignacionPelotas(jornadaActual.id, p, asignado)
+                  .then(() => showToast(asignado ? "Quitado ✓" : "Asignado ✓"))
+                  .catch(() => showToast("No se pudo actualizar.", "error"));
+              };
+
               return (
                 <button
                   key={p}
                   className="px-3 py-2 rounded-xl flex items-center gap-1.5"
                   style={chipStyle}
-                  onClick={() => toggleAsignacionPelotas(jornadaActual.id, p, asignado).catch(() => {})}
+                  onClick={handleToggle}
                 >
                   {chipContent}
                 </button>

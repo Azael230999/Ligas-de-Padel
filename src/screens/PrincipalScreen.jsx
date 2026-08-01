@@ -6,11 +6,13 @@ import { ResultadoRow } from "../components/ResultadoRow";
 import { COLORS } from "../colors";
 import { jornadasConGrupos, seedInitialData } from "../data";
 import { pairingsDeCuatro, rotacionYaJugada } from "../pairings";
+import { useToast } from "../toast";
 
 export function PrincipalScreen({ jornadas, admin }) {
   const conGrupos = jornadasConGrupos(jornadas);
   const [jornadaNombre, setJornadaNombre] = useState(null);
   const [sembrando, setSembrando] = useState(false);
+  const showToast = useToast();
 
   if (conGrupos.length === 0) {
     return (
@@ -23,7 +25,12 @@ export function PrincipalScreen({ jornadas, admin }) {
             disabled={sembrando}
             onClick={async () => {
               setSembrando(true);
-              await seedInitialData().catch(() => {});
+              try {
+                await seedInitialData();
+                showToast("Datos de ejemplo cargados ✓");
+              } catch (err) {
+                showToast("No se pudieron cargar los datos de ejemplo.", "error");
+              }
               setSembrando(false);
             }}
             className="rounded-xl px-4 py-2.5 text-sm font-black"

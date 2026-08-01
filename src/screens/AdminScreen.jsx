@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, Users } from "lucide-react";
+import { Download, Trash2, Users } from "lucide-react";
 import { COLORS } from "../colors";
 import {
   agregarParticipante,
@@ -8,14 +8,17 @@ import {
   editarGrupo,
   eliminarGrupo,
   eliminarJornada,
+  exportarDatos,
   jugadoresConocidos,
   quitarParticipante,
 } from "../data";
+import { useToast } from "../toast";
 
 function NuevaJornadaForm({ jornadas }) {
   const [nombre, setNombre] = useState("");
   const [canchas, setCanchas] = useState(3);
   const [creando, setCreando] = useState(false);
+  const showToast = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,8 +27,9 @@ function NuevaJornadaForm({ jornadas }) {
       await crearJornada(jornadas, { nombre: nombre.trim(), canchas });
       setNombre("");
       setCanchas(3);
+      showToast("Jornada creada ✓");
     } catch (err) {
-      alert("No se pudo crear la jornada.");
+      showToast("No se pudo crear la jornada.", "error");
     }
     setCreando(false);
   };
@@ -73,6 +77,7 @@ function ArmarGrupo({ jornada }) {
   const [seleccion, setSeleccion] = useState([]);
   const [nombreGrupo, setNombreGrupo] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const showToast = useToast();
 
   const disponibles = (jornada.participantes || []).filter(
     (p) => !Object.values(jornada.grupos || {}).some((jugadores) => jugadores.includes(p))
@@ -93,8 +98,9 @@ function ArmarGrupo({ jornada }) {
       await crearGrupo(jornada.id, nombreGrupo.trim() || `Grupo ${numeroGrupo}`, seleccion);
       setSeleccion([]);
       setNombreGrupo("");
+      showToast("Grupo creado ✓");
     } catch (err) {
-      alert("No se pudo crear el grupo.");
+      showToast("No se pudo crear el grupo.", "error");
     }
     setGuardando(false);
   };
@@ -155,25 +161,27 @@ function GrupoCard({ jornada, grupoNombre }) {
   const disponibles = (jornada.participantes || []).filter(
     (p) => !Object.values(jornada.grupos || {}).some((js) => js.includes(p))
   );
+  const showToast = useToast();
 
   const quitar = (nombre) => {
-    editarGrupo(jornada.id, grupoNombre, jugadores.filter((j) => j !== nombre)).catch(() => {
-      alert("No se pudo quitar al jugador.");
-    });
+    if (!confirm(`¿Quitar a "${nombre}" del grupo "${grupoNombre}"?`)) return;
+    editarGrupo(jornada.id, grupoNombre, jugadores.filter((j) => j !== nombre))
+      .then(() => showToast("Jugador quitado ✓"))
+      .catch(() => showToast("No se pudo quitar al jugador.", "error"));
   };
 
   const agregar = (nombre) => {
     if (jugadores.length >= 4) return;
-    editarGrupo(jornada.id, grupoNombre, [...jugadores, nombre]).catch(() => {
-      alert("No se pudo agregar al jugador.");
-    });
+    editarGrupo(jornada.id, grupoNombre, [...jugadores, nombre])
+      .then(() => showToast("Jugador agregado ✓"))
+      .catch(() => showToast("No se pudo agregar al jugador.", "error"));
   };
 
   const handleEliminarGrupo = () => {
     if (!confirm(`¿Borrar "${grupoNombre}"? También se borran sus resultados capturados.`)) return;
-    eliminarGrupo(jornada.id, grupoNombre).catch(() => {
-      alert("No se pudo borrar el grupo.");
-    });
+    eliminarGrupo(jornada.id, grupoNombre)
+      .then(() => showToast("Grupo borrado ✓"))
+      .catch(() => showToast("No se pudo borrar el grupo.", "error"));
   };
 
   return (
@@ -217,18 +225,36 @@ function GrupoCard({ jornada, grupoNombre }) {
 
 function JornadaAdminCard({ jornada, conocidos }) {
   const [nuevoParticipante, setNuevoParticipante] = useState("");
+  const showToast = useToast();
 
   const handleAgregar = async (e) => {
     e.preventDefault();
     const nombre = nuevoParticipante.trim();
     if (!nombre) return;
-    await agregarParticipante(jornada.id, nombre, conocidos).catch(() => {});
-    setNuevoParticipante("");
+    try {
+      await agregarParticipante(jornada.id, nombre, conocidos);
+      setNuevoParticipante("");
+      showToast("Participante agregado ✓");
+    } catch (err) {
+      showToast("No se pudo agregar al participante.", "error");
+    }
   };
 
   const handleEliminarJornada = async () => {
     if (!confirm(`¿Borrar "${jornada.nombre}" por completo? No se puede deshacer.`)) return;
-    await eliminarJornada(jornada.id).catch(() => {});
+    try {
+      await eliminarJornada(jornada.id);
+      showToast("Jornada borrada ✓");
+    } catch (err) {
+      showToast("No se pudo borrar la jornada.", "error");
+    }
+  };
+
+  const handleQuitarParticipante = (nombre) => {
+    if (!confirm(`¿Quitar a "${nombre}" de esta jornada?`)) return;
+    quitarParticipante(jornada.id, nombre)
+      .then(() => showToast("Participante quitado ✓"))
+      .catch(() => showToast("No se pudo quitar al participante.", "error"));
   };
 
   return (
@@ -254,7 +280,7 @@ function JornadaAdminCard({ jornada, conocidos }) {
         {(jornada.participantes || []).map((p) => (
           <button
             key={p}
-            onClick={() => quitarParticipante(jornada.id, p).catch(() => {})}
+            onClick={() => handleQuitarParticipante(p)}
             className="px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1"
             style={{ background: COLORS.cancha, color: COLORS.crema }}
             title="Quitar"
@@ -306,14 +332,34 @@ function JornadaAdminCard({ jornada, conocidos }) {
 export function AdminScreen({ jornadas }) {
   const conocidos = jugadoresConocidos(jornadas);
   const ordenadas = [...jornadas].sort((a, b) => b.orden - a.orden);
+  const showToast = useToast();
+
+  const handleExportar = () => {
+    try {
+      exportarDatos(jornadas);
+      showToast("Respaldo descargado ✓");
+    } catch (err) {
+      showToast("No se pudo generar el respaldo.", "error");
+    }
+  };
 
   return (
     <div className="px-5 pt-6 pb-24">
-      <div className="flex items-center gap-2 mb-4">
-        <Users size={16} color={COLORS.lima} />
-        <h2 className="font-black text-lg" style={{ color: COLORS.crema }}>
-          Administrar jornadas
-        </h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Users size={16} color={COLORS.lima} />
+          <h2 className="font-black text-lg" style={{ color: COLORS.crema }}>
+            Administrar jornadas
+          </h2>
+        </div>
+        <button
+          onClick={handleExportar}
+          title="Descargar respaldo en JSON"
+          className="flex items-center gap-1 text-[11px] font-bold underline"
+          style={{ color: COLORS.lima }}
+        >
+          <Download size={13} /> Exportar
+        </button>
       </div>
 
       <NuevaJornadaForm jornadas={jornadas} />

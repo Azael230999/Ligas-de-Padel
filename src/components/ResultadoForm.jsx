@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { COLORS } from "../colors";
 import { crearResultado } from "../data";
+import { useToast } from "../toast";
 
 export function ResultadoForm({ jornadaId, grupoNombre, rotaciones }) {
   const [abierto, setAbierto] = useState(false);
@@ -9,6 +10,7 @@ export function ResultadoForm({ jornadaId, grupoNombre, rotaciones }) {
   const [g2, setG2] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+  const showToast = useToast();
 
   if (rotaciones.length === 0) return null;
 
@@ -27,8 +29,10 @@ export function ResultadoForm({ jornadaId, grupoNombre, rotaciones }) {
       setG1("");
       setG2("");
       setAbierto(false);
+      showToast("Resultado guardado ✓");
     } catch (err) {
       setError("No se pudo guardar. ¿Iniciaste sesión como admin?");
+      showToast("No se pudo guardar el resultado.", "error");
     }
     setGuardando(false);
   };

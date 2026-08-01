@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { COLORS } from "../colors";
 import { editarResultado, eliminarResultado } from "../data";
+import { useToast } from "../toast";
 
 export function ResultadoRow({ jornadaId, grupoNombre, resultado, index, resultadosActuales, admin }) {
   const [editando, setEditando] = useState(false);
   const [g1, setG1] = useState("");
   const [g2, setG2] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const showToast = useToast();
 
   const empezarEdicion = () => {
     const [a, b] = resultado.marcador.split("/");
@@ -26,15 +28,18 @@ export function ResultadoRow({ jornadaId, grupoNombre, resultado, index, resulta
         marcador: `${g1}/${g2}`,
       });
       setEditando(false);
+      showToast("Resultado actualizado ✓");
     } catch (err) {
-      alert("No se pudo guardar el cambio.");
+      showToast("No se pudo guardar el cambio.", "error");
     }
     setGuardando(false);
   };
 
   const eliminar = () => {
     if (!confirm("¿Borrar este resultado?")) return;
-    eliminarResultado(jornadaId, grupoNombre, resultado).catch(() => alert("No se pudo borrar."));
+    eliminarResultado(jornadaId, grupoNombre, resultado)
+      .then(() => showToast("Resultado borrado ✓"))
+      .catch(() => showToast("No se pudo borrar.", "error"));
   };
 
   if (editando) {

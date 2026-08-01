@@ -9,6 +9,7 @@ import { RankingScreen } from "./screens/RankingScreen";
 import { PelotasScreen } from "./screens/PelotasScreen";
 import { LoginScreen } from "./screens/LoginScreen";
 import { AdminScreen } from "./screens/AdminScreen";
+import { ToastProvider } from "./toast";
 
 const TABS = [
   { id: "principal", label: "Principal", icon: Users },
@@ -50,6 +51,7 @@ export default function App() {
         className="w-full max-w-sm min-h-screen relative"
         style={{ background: COLORS.cancha, fontFamily: "'Inter', system-ui, sans-serif" }}
       >
+      <ToastProvider>
         <div className="px-5 pt-8 pb-2 flex items-center justify-between">
           <div>
             <p className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: COLORS.lima }}>
@@ -135,6 +137,7 @@ export default function App() {
             );
           })}
         </div>
+      </ToastProvider>
       </div>
     </div>
   );
