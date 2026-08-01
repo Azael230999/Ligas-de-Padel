@@ -7,4 +7,4 @@ export const COLORS = {
   crema: "#F7F5EF",
   tinta: "#131615",
   linea: "#2A5651",
-} as const;
+};

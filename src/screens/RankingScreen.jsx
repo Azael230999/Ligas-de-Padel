@@ -1,11 +1,11 @@
+import { useState } from "react";
 import { Trophy } from "lucide-react";
-import { COLORS } from "@/lib/colors";
-import { calcularRanking } from "@/lib/data";
+import { COLORS } from "../colors";
+import { calcularRanking } from "../data";
 
-export const dynamic = "force-dynamic";
-
-export default async function RankingPage() {
-  const ranking = await calcularRanking();
+export function RankingScreen({ jornadas }) {
+  const ranking = calcularRanking(jornadas);
+  const [abierto, setAbierto] = useState(null);
 
   return (
     <div className="px-5 pt-6 pb-24">
@@ -23,8 +23,9 @@ export default async function RankingPage() {
         {ranking.map((p, i) => {
           const pos = i + 1;
           const top3 = pos <= 3;
+          const abiertoAqui = abierto === p.nombre;
           return (
-            <details
+            <div
               key={p.nombre}
               className="rounded-xl overflow-hidden"
               style={{
@@ -32,7 +33,10 @@ export default async function RankingPage() {
                 border: `1px solid ${top3 ? COLORS.lima : COLORS.linea}`,
               }}
             >
-              <summary className="w-full px-3.5 py-3 flex items-center gap-3 cursor-pointer list-none">
+              <button
+                className="w-full px-3.5 py-3 flex items-center gap-3"
+                onClick={() => setAbierto(abiertoAqui ? null : p.nombre)}
+              >
                 <span
                   className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
                   style={{
@@ -49,25 +53,24 @@ export default async function RankingPage() {
                   <p className="font-black text-sm leading-none" style={{ color: top3 ? COLORS.tinta : COLORS.crema }}>
                     {p.pts} pts
                   </p>
-                  <p
-                    className="text-[10px] leading-none mt-1"
-                    style={{ color: top3 ? "#2A5651" : COLORS.limaSoft }}
-                  >
+                  <p className="text-[10px] leading-none mt-1" style={{ color: top3 ? "#2A5651" : COLORS.limaSoft }}>
                     {p.jornadasJugadas} jornadas
                   </p>
                 </div>
-              </summary>
-              <div
-                className="px-4 pb-3 pt-1 flex items-center justify-between text-xs"
-                style={{ color: top3 ? "#2A5651" : COLORS.limaSoft }}
-              >
-                <span>
-                  Games: {p.diffGames >= 0 ? "+" : ""}
-                  {p.diffGames} ({p.rondas} rondas)
-                </span>
-                <span>Asistencia: +{p.asistencia}</span>
-              </div>
-            </details>
+              </button>
+              {abiertoAqui && (
+                <div
+                  className="px-4 pb-3 pt-1 flex items-center justify-between text-xs"
+                  style={{ color: top3 ? "#2A5651" : COLORS.limaSoft }}
+                >
+                  <span>
+                    Games: {p.diffGames >= 0 ? "+" : ""}
+                    {p.diffGames} ({p.rondas} rondas)
+                  </span>
+                  <span>Asistencia: +{p.asistencia}</span>
+                </div>
+              )}
+            </div>
           );
         })}
       </div>

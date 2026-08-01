@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Cualquiera puede ver las jornadas (link de solo lectura). Solo un
+    // usuario autenticado (el admin de la liga) puede editar.
+    match /jornadas/{jornadaId} {
+      allow get, list: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+  }
+}

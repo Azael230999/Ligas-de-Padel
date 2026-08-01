@@ -4,23 +4,40 @@ App de seguimiento de jornadas para una liga de pádel: grupos, resultados, rank
 
 ## Stack
 
-- [Next.js](https://nextjs.org) (App Router) + TypeScript + Tailwind CSS
-- [Prisma](https://www.prisma.io) + PostgreSQL para persistencia
-- Server Actions para todas las mutaciones (capturar resultados, asignar rol de pelotas)
+- [Vite](https://vitejs.dev) + React + Tailwind CSS — SPA de puro cliente, sin servidor.
+- [Firestore](https://firebase.google.com/docs/firestore) para persistencia (lectura pública, escritura solo autenticada).
+- [Firebase Auth](https://firebase.google.com/docs/auth) (correo/contraseña) para el acceso de admin.
+- Hosting gratis en **GitHub Pages** vía GitHub Actions.
 
-## Empezar
+## Empezar (local)
 
-Necesitas una base PostgreSQL corriendo localmente (o apuntar `DATABASE_URL` a una remota).
+Necesitas los [emuladores de Firebase](https://firebase.google.com/docs/emulator-suite) para desarrollar sin
+tocar datos reales (requieren Java, ya viene con `firebase-tools`):
 
 ```bash
 npm install
-npx prisma migrate dev   # crea prisma/migrations y aplica el esquema
+npx firebase emulators:start --project demo-ligas-de-padel --only firestore,auth
+```
+
+En otra terminal:
+
+```bash
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000), entra a `/login` con la contraseña de
-`ADMIN_PASSWORD` (variable de entorno, ver `.env`) y usa el botón **"Cargar datos de ejemplo"**
-que aparece en Principal cuando la base está vacía.
+Abre [http://localhost:5173](http://localhost:5173). El `.env` local ya apunta al emulador
+(`VITE_USE_EMULATORS=true` con credenciales de mentira — no hace falta un proyecto real de Firebase
+para desarrollar).
+
+Para entrar como admin en local, crea un usuario en el emulador (una sola vez):
+
+```bash
+curl -X POST "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@test.com","password":"test1234","returnSecureToken":true}'
+```
+
+Luego entra desde la app con ese correo/contraseña y usa **"Cargar datos de ejemplo"** en Principal.
 
 ## Pantallas
 
@@ -30,60 +47,71 @@ que aparece en Principal cuando la base está vacía.
 - **Pelotas**: rol de quién lleva pelotas por jornada próxima, con sugerencia automática basada en
   quién ha llevado menos veces, e historial de jornadas ya jugadas.
 
-Sin iniciar sesión, todo se ve en modo lectura. Con la contraseña de admin (`/login`) aparecen los
-formularios de edición.
+Sin iniciar sesión, todo se ve en modo lectura. Iniciando sesión (botón "Entrar como admin")
+aparecen los formularios de edición.
 
 ## Modelo de datos
 
-`prisma/schema.prisma` define: `Jugador`, `Jornada`, `JornadaParticipante` (asistencia confirmada),
-`Grupo` / `GrupoJugador`, `Partido` / `PartidoJugador` (resultados) y `PelotasAsignacion`.
+Una sola colección `jornadas`, un documento por jornada:
 
-## Acceso de admin
+```
+{
+  nombre, orden, canchas,
+  grupos: { "Grupo 1": [nombres...], ... },
+  resultados: { "Grupo 1": [{ pareja1: [nombre,nombre], pareja2: [nombre,nombre], marcador: "6/4" }], ... },
+  participantes: [nombres...],       // cuando aún no hay grupos armados
+  pelotasAsignados: [nombres...],
+}
+```
 
-Un solo link para todos: sin autenticarse se ve todo en solo lectura. Entrando a `/login` con la
-contraseña de la variable de entorno `ADMIN_PASSWORD` se activa "Modo admin" (cookie firmada,
-30 días), que habilita los formularios de edición y las server actions correspondientes. Las
-server actions también rechazan la mutación del lado del servidor si no hay sesión de admin,
-aunque se invoquen directamente.
+Ranking y balance de pelotas se calculan en el cliente a partir de todos los documentos de
+`jornadas` (ver `src/data.js`), igual que en el mock original.
 
-## Desplegar (Firebase App Hosting + Cloud SQL)
+## Seguridad (`firestore.rules`)
 
-El repo incluye `apphosting.yaml` para [Firebase App Hosting](https://firebase.google.com/docs/app-hosting),
-que builda y sirve la app directo desde este repo de GitHub.
+Cualquiera puede leer `jornadas` (link de solo lectura). Solo un usuario autenticado (el admin de
+la liga) puede crear/editar/borrar. No hay roles ni multi-tenant: basta con que exista una sola
+cuenta de Firebase Auth para el admin.
 
-### 1. Crear la base de datos (Cloud SQL)
+## Desplegar
 
-1. En la consola de Firebase/GCP, ve a **Cloud SQL** → **Crear instancia** → PostgreSQL.
-2. Configúrala con IP pública, anota la contraseña del usuario `postgres` (o crea un usuario propio).
-3. En **Conexiones → Redes autorizadas**, agrega `0.0.0.0/0` para permitir conexiones desde App
-   Hosting (Cloud Run no tiene IP fija). Requiere SSL, así que sigue siendo razonablemente seguro,
-   pero si quieres más aislamiento la alternativa es una VPC privada + conector, más avanzado de
-   configurar.
-4. Crea una base de datos (ej. `ligas_de_padel`) dentro de la instancia.
-5. Arma tu `DATABASE_URL`:
-   `postgresql://USUARIO:PASSWORD@IP_PUBLICA:5432/ligas_de_padel?sslmode=require`
+### 1. Crear el proyecto de Firebase (si no lo tienes)
 
-### 2. Guardar los secrets
+1. En la [consola de Firebase](https://console.firebase.google.com), crea o abre tu proyecto.
+2. **Build → Firestore Database** → crear base de datos (modo producción, cualquier región).
+3. **Build → Authentication** → habilitar el proveedor **Correo/contraseña**, y en la pestaña
+   **Users** agrega manualmente al admin (tu correo + una contraseña).
+4. **Configuración del proyecto → Tus apps → Web** (`</>`) para registrar una web app y obtener el
+   `firebaseConfig` (apiKey, authDomain, projectId, etc.) — este dato es público a propósito, la
+   seguridad la da `firestore.rules`, no el secreto de la key.
 
-`apphosting.yaml` espera dos secrets de Secret Manager (no van en texto plano en el repo):
+### 2. Publicar `firestore.rules`
 
-- `database-url` → la cadena de conexión del paso anterior.
-- `admin-password` → la contraseña que quieras usar para entrar como admin en `/login`.
+Desde tu compu, con `npx firebase login` una sola vez y luego:
 
-La consola de Firebase pide crear/vincular estos secrets automáticamente la primera vez que
-despliegas y detecta que `apphosting.yaml` los referencia.
+```bash
+npx firebase deploy --only firestore:rules --project TU_PROJECT_ID
+```
 
-### 3. Conectar el repo
+### 3. Guardar el `firebaseConfig` como GitHub Secrets
 
-1. En la consola de Firebase → **App Hosting** → **Crear backend**.
-2. Conecta GitHub, selecciona este repositorio y la rama a desplegar.
-3. Firebase detecta Next.js y usa `apphosting.yaml`.
-4. Al arrancar, el script `start` corre `prisma migrate deploy` (aplica el esquema si falta) y
-   luego `next start`. **No** siembra datos automáticamente — eso es a propósito, para no pisar
-   resultados reales en cada reinicio.
-5. Con la base recién creada (vacía), entra a la URL pública, inicia sesión como admin en
-   `/login`, y usa el botón **"Cargar datos de ejemplo"** en Principal una sola vez.
+En GitHub: repo → **Settings → Secrets and variables → Actions** → agrega estos 6 secrets con los
+valores del `firebaseConfig` del paso 1:
 
-No se pudo probar un despliegue real contra Cloud SQL en esta sesión (no había cuenta de
-Firebase/GCP conectada), así que si algo en `apphosting.yaml` o los pasos de arriba no coincide
-con la consola actual, ajústalo según lo que Firebase te indique ahí.
+`VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`,
+`VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`.
+
+### 4. Activar GitHub Pages
+
+Repo → **Settings → Pages** → en "Build and deployment", **Source: GitHub Actions**.
+
+### 5. Desplegar
+
+El workflow `.github/workflows/deploy.yml` builda y publica en cada push a `main` (o desde la
+pestaña **Actions → Deploy to GitHub Pages → Run workflow** para desplegar manualmente sin esperar
+un push). La URL pública queda en `https://<tu-usuario>.github.io/Ligas-de-Padel/`.
+
+No se pudo probar un despliegue real a GitHub Pages ni a un proyecto de Firebase real en esta
+sesión (no había cuenta conectada) — sí se probó todo el flujo completo (login, sembrar datos,
+capturar resultado, rol de pelotas, y que las reglas de seguridad bloquean escrituras sin sesión)
+contra los emuladores de Firebase.

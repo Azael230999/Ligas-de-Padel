@@ -1,31 +1,28 @@
+import { useState } from "react";
 import { Check, CircleDot } from "lucide-react";
-import { aplicarSugerenciaPelotas, toggleAsignacionPelotas } from "@/app/actions";
-import { Chip } from "@/components/Chip";
-import { COLORS } from "@/lib/colors";
+import { Chip } from "../components/Chip";
+import { COLORS } from "../colors";
 import {
+  aplicarSugerenciaPelotas,
   calcularBalancePelotas,
-  getJornadasHistorialPelotas,
-  getJornadasProximasPelotas,
-} from "@/lib/data";
-import { isAdmin } from "@/lib/auth";
+  jornadasHistorialPelotas,
+  jornadasProximasPelotas,
+  sugerirAsignados,
+  toggleAsignacionPelotas,
+} from "../data";
 
-export default async function PelotasPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ jornada?: string }>;
-}) {
-  const { jornada: jornadaParam } = await searchParams;
-  const [proximas, historial, { conteo, jugadas }, admin] = await Promise.all([
-    getJornadasProximasPelotas(),
-    getJornadasHistorialPelotas(),
-    calcularBalancePelotas(),
-    isAdmin(),
-  ]);
+export function PelotasScreen({ jornadas, admin }) {
+  const proximas = jornadasProximasPelotas(jornadas);
+  const historial = jornadasHistorialPelotas(jornadas);
+  const { conteo, jugadas } = calcularBalancePelotas(jornadas);
+  const [jornadaNombre, setJornadaNombre] = useState(null);
 
-  const jornadaActual = proximas.find((j) => j.nombre === jornadaParam) ?? proximas[0];
+  const jornadaActual = proximas.find((j) => j.nombre === jornadaNombre) ?? proximas[0];
+  const asignados = new Set(jornadaActual?.pelotasAsignados || []);
+
   const balanceOrdenado = Object.keys(jugadas).sort((a, b) => {
-    const ratioA = (conteo[a] ?? 0) / jugadas[a];
-    const ratioB = (conteo[b] ?? 0) / jugadas[b];
+    const ratioA = (conteo[a] || 0) / jugadas[a];
+    const ratioB = (conteo[b] || 0) / jugadas[b];
     return ratioA - ratioB;
   });
 
@@ -50,7 +47,7 @@ export default async function PelotasPage({
         <>
           <div className="flex gap-2 overflow-x-auto pb-4 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
             {proximas.map((j) => (
-              <Chip key={j.nombre} active={jornadaActual.nombre === j.nombre} href={`/pelotas?jornada=${encodeURIComponent(j.nombre)}`}>
+              <Chip key={j.nombre} active={jornadaActual.nombre === j.nombre} onClick={() => setJornadaNombre(j.nombre)}>
                 {j.nombre}
               </Chip>
             ))}
@@ -66,11 +63,11 @@ export default async function PelotasPage({
             <span
               className="text-xs font-black px-2.5 py-1 rounded-full"
               style={{
-                background: jornadaActual.asignadosIds.size === jornadaActual.canchas ? COLORS.lima : COLORS.cancha,
-                color: jornadaActual.asignadosIds.size === jornadaActual.canchas ? COLORS.tinta : COLORS.limaSoft,
+                background: asignados.size === jornadaActual.canchas ? COLORS.lima : COLORS.cancha,
+                color: asignados.size === jornadaActual.canchas ? COLORS.tinta : COLORS.limaSoft,
               }}
             >
-              {jornadaActual.asignadosIds.size}/{jornadaActual.canchas} asignados
+              {asignados.size}/{jornadaActual.canchas} asignados
             </span>
           </div>
 
@@ -79,18 +76,22 @@ export default async function PelotasPage({
               Participantes de esta jornada
             </p>
             {admin && (
-              <form action={aplicarSugerenciaPelotas}>
-                <input type="hidden" name="jornadaId" value={jornadaActual.id} />
-                <button type="submit" className="text-[11px] font-bold underline" style={{ color: COLORS.lima }}>
-                  Usar sugerencia
-                </button>
-              </form>
+              <button
+                className="text-[11px] font-bold underline"
+                style={{ color: COLORS.lima }}
+                onClick={() => {
+                  const sugeridos = sugerirAsignados(jornadaActual.participantes, jornadaActual.canchas, conteo);
+                  aplicarSugerenciaPelotas(jornadaActual.id, sugeridos).catch(() => {});
+                }}
+              >
+                Usar sugerencia
+              </button>
             )}
           </div>
           <div className="flex flex-wrap gap-2 mb-6">
             {jornadaActual.participantes.map((p) => {
-              const asignado = jornadaActual.asignadosIds.has(p.id);
-              const veces = conteo[p.nombre] ?? 0;
+              const asignado = asignados.has(p);
+              const veces = conteo[p] || 0;
               const chipStyle = {
                 background: asignado ? COLORS.lima : COLORS.canchaAlt,
                 border: `1px solid ${asignado ? COLORS.lima : COLORS.linea}`,
@@ -98,7 +99,7 @@ export default async function PelotasPage({
               const chipContent = (
                 <>
                   <span className="text-sm font-bold" style={{ color: asignado ? COLORS.tinta : COLORS.crema }}>
-                    {p.nombre}
+                    {p}
                   </span>
                   <span className="text-[10px] font-bold" style={{ color: asignado ? "#2A5651" : COLORS.limaSoft }}>
                     ·{veces}
@@ -109,20 +110,21 @@ export default async function PelotasPage({
 
               if (!admin) {
                 return (
-                  <div key={p.id} className="px-3 py-2 rounded-xl flex items-center gap-1.5" style={chipStyle}>
+                  <div key={p} className="px-3 py-2 rounded-xl flex items-center gap-1.5" style={chipStyle}>
                     {chipContent}
                   </div>
                 );
               }
 
               return (
-                <form key={p.id} action={toggleAsignacionPelotas}>
-                  <input type="hidden" name="jornadaId" value={jornadaActual.id} />
-                  <input type="hidden" name="jugadorId" value={p.id} />
-                  <button type="submit" className="px-3 py-2 rounded-xl flex items-center gap-1.5" style={chipStyle}>
-                    {chipContent}
-                  </button>
-                </form>
+                <button
+                  key={p}
+                  className="px-3 py-2 rounded-xl flex items-center gap-1.5"
+                  style={chipStyle}
+                  onClick={() => toggleAsignacionPelotas(jornadaActual.id, p, asignado).catch(() => {})}
+                >
+                  {chipContent}
+                </button>
               );
             })}
           </div>
@@ -139,7 +141,7 @@ export default async function PelotasPage({
               {h.nombre} · {h.canchas} {h.canchas === 1 ? "cancha" : "canchas"}
             </p>
             <p className="font-bold text-sm" style={{ color: COLORS.crema }}>
-              {h.asignados.length > 0 ? h.asignados.join(", ") : "Sin asignar todavía"}
+              {(h.pelotasAsignados || []).length > 0 ? h.pelotasAsignados.join(", ") : "Sin asignar todavía"}
             </p>
           </div>
         ))}
@@ -155,7 +157,7 @@ export default async function PelotasPage({
               {p}
             </span>
             <span className="text-xs font-mono" style={{ color: COLORS.limaSoft }}>
-              {conteo[p] ?? 0} / {jugadas[p]}
+              {conteo[p] || 0} / {jugadas[p]}
             </span>
           </div>
         ))}
