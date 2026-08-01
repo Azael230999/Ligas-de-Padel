@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "prisma migrate deploy && prisma db seed && next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.9.1",
