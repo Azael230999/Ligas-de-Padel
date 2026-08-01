@@ -82,8 +82,9 @@ cuenta de Firebase Auth para el admin.
 3. **Build → Authentication** → habilitar el proveedor **Correo/contraseña**, y en la pestaña
    **Users** agrega manualmente al admin (tu correo + una contraseña).
 4. **Configuración del proyecto → Tus apps → Web** (`</>`) para registrar una web app y obtener el
-   `firebaseConfig` (apiKey, authDomain, projectId, etc.) — este dato es público a propósito, la
-   seguridad la da `firestore.rules`, no el secreto de la key.
+   `firebaseConfig`. Ese valor ya está escrito directo en `src/firebase.js` — es público a
+   propósito (la seguridad la da `firestore.rules`, no el secreto de la key), así que no hace
+   falta pasarlo como secret/variable de entorno en ningún lado.
 
 ### 2. Publicar `firestore.rules`
 
@@ -93,19 +94,11 @@ Desde tu compu, con `npx firebase login` una sola vez y luego:
 npx firebase deploy --only firestore:rules --project TU_PROJECT_ID
 ```
 
-### 3. Guardar el `firebaseConfig` como GitHub Secrets
-
-En GitHub: repo → **Settings → Secrets and variables → Actions** → agrega estos 6 secrets con los
-valores del `firebaseConfig` del paso 1:
-
-`VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`,
-`VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`.
-
-### 4. Activar GitHub Pages
+### 3. Activar GitHub Pages
 
 Repo → **Settings → Pages** → en "Build and deployment", **Source: GitHub Actions**.
 
-### 5. Desplegar
+### 4. Desplegar
 
 El workflow `.github/workflows/deploy.yml` builda y publica en cada push a `main` (o desde la
 pestaña **Actions → Deploy to GitHub Pages → Run workflow** para desplegar manualmente sin esperar

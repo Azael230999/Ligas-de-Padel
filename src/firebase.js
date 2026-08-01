@@ -7,13 +7,17 @@ import {
   connectFirestoreEmulator,
 } from "firebase/firestore";
 
+// El config de un web app de Firebase es público a propósito (no es un
+// secreto): la seguridad de los datos la dan firestore.rules, no esta key.
+// Ver https://firebase.google.com/docs/projects/api-keys
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyAzEk63Tcoj5kwFliZT0PI5Qdg41s-W5Hs",
+  authDomain: "liga-de-padel-8f0da.firebaseapp.com",
+  projectId: "liga-de-padel-8f0da",
+  storageBucket: "liga-de-padel-8f0da.firebasestorage.app",
+  messagingSenderId: "845103977027",
+  appId: "1:845103977027:web:85fb12ba9e6d4691aebaf6",
+  measurementId: "G-V0GDQQRFYW",
 };
 
 export const app = initializeApp(firebaseConfig);
