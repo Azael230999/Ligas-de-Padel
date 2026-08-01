@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Download, Trash2, Users } from "lucide-react";
+import { Download, Shuffle, Trash2, Users } from "lucide-react";
 import { COLORS } from "../colors";
 import {
   agregarParticipante,
+  armarCanchasPorRanking,
   crearGrupo,
   crearJornada,
   editarGrupo,
@@ -11,12 +12,15 @@ import {
   exportarDatos,
   jugadoresConocidos,
   quitarParticipante,
+  ultimaTemporada,
 } from "../data";
 import { useToast } from "../toast";
 
 function NuevaJornadaForm({ jornadas }) {
   const [nombre, setNombre] = useState("");
   const [canchas, setCanchas] = useState(3);
+  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
+  const [temporada, setTemporada] = useState(ultimaTemporada(jornadas));
   const [creando, setCreando] = useState(false);
   const showToast = useToast();
 
@@ -24,7 +28,7 @@ function NuevaJornadaForm({ jornadas }) {
     e.preventDefault();
     setCreando(true);
     try {
-      await crearJornada(jornadas, { nombre: nombre.trim(), canchas });
+      await crearJornada(jornadas, { nombre: nombre.trim(), canchas, fecha, temporada: temporada.trim() });
       setNombre("");
       setCanchas(3);
       showToast("Jornada creada ✓");
@@ -58,6 +62,23 @@ function NuevaJornadaForm({ jornadas }) {
           value={canchas}
           onChange={(e) => setCanchas(e.target.value)}
           className="rounded-xl px-3 py-2 text-sm font-mono font-bold w-20"
+          style={{ background: COLORS.cancha, color: COLORS.crema, border: `1px solid ${COLORS.linea}` }}
+        />
+      </div>
+      <div className="flex gap-3">
+        <input
+          type="date"
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+          className="rounded-xl px-3 py-2 text-sm font-medium flex-1"
+          style={{ background: COLORS.cancha, color: COLORS.crema, border: `1px solid ${COLORS.linea}` }}
+        />
+        <input
+          type="text"
+          placeholder="Temporada (ej. Primavera 2026)"
+          value={temporada}
+          onChange={(e) => setTemporada(e.target.value)}
+          className="rounded-xl px-3 py-2 text-sm font-medium flex-1"
           style={{ background: COLORS.cancha, color: COLORS.crema, border: `1px solid ${COLORS.linea}` }}
         />
       </div>
@@ -95,7 +116,7 @@ function ArmarGrupo({ jornada }) {
     if (seleccion.length !== 4) return;
     setGuardando(true);
     try {
-      await crearGrupo(jornada.id, nombreGrupo.trim() || `Grupo ${numeroGrupo}`, seleccion);
+      await crearGrupo(jornada.id, nombreGrupo.trim() || `Cancha ${numeroGrupo}`, seleccion);
       setSeleccion([]);
       setNombreGrupo("");
       showToast("Grupo creado ✓");
@@ -110,7 +131,7 @@ function ArmarGrupo({ jornada }) {
   return (
     <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${COLORS.linea}` }}>
       <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: COLORS.limaSoft }}>
-        Armar grupo (elige 4)
+        Armar cancha (elige 4)
       </p>
       <div className="flex flex-wrap gap-2 mb-2">
         {disponibles.map((p) => {
@@ -134,7 +155,7 @@ function ArmarGrupo({ jornada }) {
       <div className="flex gap-2">
         <input
           type="text"
-          placeholder={`Grupo ${numeroGrupo}`}
+          placeholder={`Cancha ${numeroGrupo}`}
           value={nombreGrupo}
           onChange={(e) => setNombreGrupo(e.target.value)}
           className="rounded-xl px-3 py-2 text-sm font-medium flex-1"
@@ -149,7 +170,7 @@ function ArmarGrupo({ jornada }) {
             color: seleccion.length === 4 ? COLORS.tinta : COLORS.limaSoft,
           }}
         >
-          Crear grupo ({seleccion.length}/4)
+          Crear cancha ({seleccion.length}/4)
         </button>
       </div>
     </div>
@@ -223,8 +244,9 @@ function GrupoCard({ jornada, grupoNombre }) {
   );
 }
 
-function JornadaAdminCard({ jornada, conocidos }) {
+function JornadaAdminCard({ jornada, conocidos, jornadas }) {
   const [nuevoParticipante, setNuevoParticipante] = useState("");
+  const [armando, setArmando] = useState(false);
   const showToast = useToast();
 
   const handleAgregar = async (e) => {
@@ -238,6 +260,28 @@ function JornadaAdminCard({ jornada, conocidos }) {
     } catch (err) {
       showToast("No se pudo agregar al participante.", "error");
     }
+  };
+
+  const disponiblesParaCancha = (jornada.participantes || []).filter(
+    (p) => !Object.values(jornada.grupos || {}).some((jugadores) => jugadores.includes(p))
+  );
+
+  const handleArmarPorRanking = async () => {
+    if (Object.keys(jornada.grupos || {}).length > 0) {
+      if (!confirm("Ya hay canchas armadas para esta jornada. ¿Reemplazarlas según el ranking actual?")) return;
+    }
+    setArmando(true);
+    try {
+      const { canchasArmadas, sinCancha } = await armarCanchasPorRanking(jornada, jornadas);
+      showToast(
+        sinCancha.length > 0
+          ? `${canchasArmadas} cancha(s) armadas ✓ (${sinCancha.length} sin cancha por completar)`
+          : `${canchasArmadas} cancha(s) armadas ✓`
+      );
+    } catch (err) {
+      showToast("No se pudieron armar las canchas.", "error");
+    }
+    setArmando(false);
   };
 
   const handleEliminarJornada = async () => {
@@ -313,10 +357,22 @@ function JornadaAdminCard({ jornada, conocidos }) {
         </button>
       </form>
 
+      {disponiblesParaCancha.length >= 4 && (
+        <button
+          onClick={handleArmarPorRanking}
+          disabled={armando}
+          title="Ordena a los participantes por ranking y arma canchas de 4 en 4"
+          className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-black mb-1 transition-transform active:scale-95"
+          style={{ background: COLORS.lima, color: COLORS.tinta }}
+        >
+          <Shuffle size={13} /> {armando ? "Armando…" : "Armar canchas automáticamente"}
+        </button>
+      )}
+
       {Object.keys(jornada.grupos || {}).length > 0 && (
         <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${COLORS.linea}` }}>
           <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: COLORS.limaSoft }}>
-            Grupos armados (toca a alguien para quitarlo, o "+ nombre" para agregarlo)
+            Canchas armadas (toca a alguien para quitarlo, o "+ nombre" para agregarlo)
           </p>
           {Object.keys(jornada.grupos).map((nombre) => (
             <GrupoCard key={nombre} jornada={jornada} grupoNombre={nombre} />
@@ -366,7 +422,7 @@ export function AdminScreen({ jornadas }) {
 
       <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 lg:items-start">
         {ordenadas.map((j) => (
-          <JornadaAdminCard key={j.id} jornada={j} conocidos={conocidos} />
+          <JornadaAdminCard key={j.id} jornada={j} conocidos={conocidos} jornadas={jornadas} />
         ))}
       </div>
     </div>

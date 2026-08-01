@@ -12,7 +12,8 @@ service cloud.firestore {
     // mapas; su contenido interno lo arma siempre el cliente (data.js).
     function jornadaValida(datos) {
       return datos.keys().hasOnly(
-          ['nombre', 'orden', 'canchas', 'participantes', 'grupos', 'resultados', 'pelotasAsignados']
+          ['nombre', 'orden', 'canchas', 'participantes', 'grupos', 'resultados', 'pelotasAsignados',
+           'fecha', 'temporada']
         )
         && datos.nombre is string
         && datos.orden is number
@@ -20,7 +21,9 @@ service cloud.firestore {
         && (!('participantes' in datos) || datos.participantes is list)
         && (!('grupos' in datos) || datos.grupos is map)
         && (!('resultados' in datos) || datos.resultados is map)
-        && (!('pelotasAsignados' in datos) || datos.pelotasAsignados is list);
+        && (!('pelotasAsignados' in datos) || datos.pelotasAsignados is list)
+        && (!('fecha' in datos) || datos.fecha is string)
+        && (!('temporada' in datos) || datos.temporada is string);
     }
 
     // Cualquiera puede ver las jornadas (link de solo lectura). Solo un

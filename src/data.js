@@ -85,7 +85,7 @@ export function jugadoresConocidos(jornadas) {
   return Array.from(nombres).sort((a, b) => a.localeCompare(b));
 }
 
-export async function crearJornada(jornadasActuales, { nombre, canchas }) {
+export async function crearJornada(jornadasActuales, { nombre, canchas, fecha, temporada }) {
   const siguienteOrden = Math.max(0, ...jornadasActuales.map((j) => j.orden)) + 1;
   const id = String(siguienteOrden);
   await setDoc(doc(jornadasCol, id), {
@@ -93,8 +93,19 @@ export async function crearJornada(jornadasActuales, { nombre, canchas }) {
     orden: siguienteOrden,
     canchas: Number(canchas) || 1,
     participantes: [],
+    fecha: fecha || new Date().toISOString().slice(0, 10),
+    temporada: temporada || "",
   });
   return id;
+}
+
+// Última temporada usada (por fecha de jornada), para pre-llenar el campo al
+// crear la siguiente — normalmente todas las jornadas seguidas son de la
+// misma temporada.
+export function ultimaTemporada(jornadas) {
+  const conTemporada = jornadas.filter((j) => j.temporada);
+  if (conTemporada.length === 0) return "";
+  return [...conTemporada].sort((a, b) => (a.fecha || "").localeCompare(b.fecha || "")).at(-1).temporada;
 }
 
 export async function eliminarJornada(jornadaId) {
@@ -129,6 +140,31 @@ export async function crearGrupo(jornadaId, grupoNombre, jugadores) {
 // grupo); se usa un nombre distinto solo para que se lea claro en el
 // llamador si se está armando un grupo nuevo o editando uno existente.
 export const editarGrupo = crearGrupo;
+
+// Arma las canchas de una jornada de un jazo, ordenando a sus participantes
+// por su ranking actual (de mejor a peor) y cortando en bloques de 4, tal
+// como marca el reglamento ("los 4 mejor rankeados juegan en la 1ra
+// cancha..."). Los que sobran (si no son múltiplo de 4) quedan sin cancha
+// para completarse a mano (ej. con un invitado) desde la UI existente.
+export async function armarCanchasPorRanking(jornada, todasLasJornadas, ajustes = []) {
+  const ranking = calcularRanking(todasLasJornadas, ajustes);
+  const puntos = Object.fromEntries(ranking.map((r) => [r.nombre, r.pts]));
+  const ordenados = [...(jornada.participantes || [])].sort((a, b) => {
+    const diff = (puntos[b] ?? 0) - (puntos[a] ?? 0);
+    return diff !== 0 ? diff : a.localeCompare(b);
+  });
+
+  const grupos = {};
+  let numeroCancha = 1;
+  for (let i = 0; i + 4 <= ordenados.length; i += 4) {
+    grupos[`Cancha ${numeroCancha}`] = ordenados.slice(i, i + 4);
+    numeroCancha += 1;
+  }
+
+  const ref = doc(db, "jornadas", jornada.id);
+  await updateDoc(ref, { grupos });
+  return { canchasArmadas: numeroCancha - 1, sinCancha: ordenados.slice((numeroCancha - 1) * 4) };
+}
 
 export async function eliminarGrupo(jornadaId, grupoNombre) {
   const ref = doc(db, "jornadas", jornadaId);
