@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Users, Trophy, CircleDot } from "lucide-react";
+import { Users, Trophy, CircleDot, Settings } from "lucide-react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebase";
 import { watchJornadas } from "./data";
@@ -8,12 +8,15 @@ import { PrincipalScreen } from "./screens/PrincipalScreen";
 import { RankingScreen } from "./screens/RankingScreen";
 import { PelotasScreen } from "./screens/PelotasScreen";
 import { LoginScreen } from "./screens/LoginScreen";
+import { AdminScreen } from "./screens/AdminScreen";
 
 const TABS = [
   { id: "principal", label: "Principal", icon: Users },
   { id: "ranking", label: "Ranking", icon: Trophy },
   { id: "pelotas", label: "Pelotas", icon: CircleDot },
 ];
+
+const ADMIN_TAB = { id: "admin", label: "Admin", icon: Settings };
 
 export default function App() {
   const [tab, setTab] = useState("principal");
@@ -34,6 +37,12 @@ export default function App() {
   }, []);
 
   useEffect(() => onAuthStateChanged(auth, (user) => setAdmin(!!user)), []);
+
+  useEffect(() => {
+    if (!admin && tab === "admin") setTab("principal");
+  }, [admin, tab]);
+
+  const tabs = admin ? [...TABS, ADMIN_TAB] : TABS;
 
   return (
     <div className="w-full min-h-screen flex justify-center" style={{ background: "#0A2422" }}>
@@ -98,6 +107,7 @@ export default function App() {
               {tab === "principal" && <PrincipalScreen jornadas={jornadas} admin={admin} />}
               {tab === "ranking" && <RankingScreen jornadas={jornadas} />}
               {tab === "pelotas" && <PelotasScreen jornadas={jornadas} admin={admin} />}
+              {tab === "admin" && admin && <AdminScreen jornadas={jornadas} />}
             </>
           )}
         </div>
@@ -106,7 +116,7 @@ export default function App() {
           className="fixed bottom-0 w-full max-w-sm flex items-stretch"
           style={{ background: COLORS.canchaAlt, borderTop: `1px solid ${COLORS.linea}` }}
         >
-          {TABS.map(({ id, label, icon: Icon }) => {
+          {tabs.map(({ id, label, icon: Icon }) => {
             const active = tab === id && !mostrarLogin;
             return (
               <button

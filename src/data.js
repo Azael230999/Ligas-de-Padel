@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   FieldPath,
   arrayUnion,
@@ -53,6 +54,49 @@ export async function toggleAsignacionPelotas(jornadaId, jugador, yaAsignado) {
 export async function aplicarSugerenciaPelotas(jornadaId, sugeridos) {
   const ref = doc(db, "jornadas", jornadaId);
   await updateDoc(ref, { pelotasAsignados: sugeridos });
+}
+
+export function jugadoresConocidos(jornadas) {
+  const nombres = new Set();
+  for (const j of jornadas) {
+    for (const jugadores of Object.values(j.grupos || {})) {
+      for (const nombre of jugadores) nombres.add(nombre);
+    }
+    for (const nombre of j.participantes || []) nombres.add(nombre);
+    for (const nombre of j.pelotasAsignados || []) nombres.add(nombre);
+  }
+  return Array.from(nombres).sort((a, b) => a.localeCompare(b));
+}
+
+export async function crearJornada(jornadasActuales, { nombre, canchas }) {
+  const siguienteOrden = Math.max(0, ...jornadasActuales.map((j) => j.orden)) + 1;
+  const id = String(siguienteOrden);
+  await setDoc(doc(jornadasCol, id), {
+    nombre: nombre || `Jornada ${siguienteOrden}`,
+    orden: siguienteOrden,
+    canchas: Number(canchas) || 1,
+    participantes: [],
+  });
+  return id;
+}
+
+export async function eliminarJornada(jornadaId) {
+  await deleteDoc(doc(db, "jornadas", jornadaId));
+}
+
+export async function agregarParticipante(jornadaId, nombre) {
+  const ref = doc(db, "jornadas", jornadaId);
+  await updateDoc(ref, { participantes: arrayUnion(nombre) });
+}
+
+export async function quitarParticipante(jornadaId, nombre) {
+  const ref = doc(db, "jornadas", jornadaId);
+  await updateDoc(ref, { participantes: arrayRemove(nombre) });
+}
+
+export async function crearGrupo(jornadaId, grupoNombre, jugadores) {
+  const ref = doc(db, "jornadas", jornadaId);
+  await updateDoc(ref, new FieldPath("grupos", grupoNombre), jugadores);
 }
 
 export async function seedInitialData() {
