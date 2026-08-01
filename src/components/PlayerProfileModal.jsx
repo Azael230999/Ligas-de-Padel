@@ -55,6 +55,20 @@ export function PlayerProfileModal({ jornadas, nombre, stats, onClose }) {
           </div>
         )}
 
+        {stats && (stats.ajuste !== 0 || stats.penalizacionInactividad !== 0) && (
+          <div className="flex items-center gap-3 text-xs mb-5 -mt-3" style={{ color: COLORS.limaSoft }}>
+            {stats.ajuste !== 0 && (
+              <span>
+                Ajustes: {stats.ajuste >= 0 ? "+" : ""}
+                {stats.ajuste}
+              </span>
+            )}
+            {stats.penalizacionInactividad !== 0 && (
+              <span>Penalización por inactividad: {stats.penalizacionInactividad}</span>
+            )}
+          </div>
+        )}
+
         <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: COLORS.limaSoft }}>
           Historial
         </p>

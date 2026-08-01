@@ -6,14 +6,14 @@ import { PlayerProfileModal } from "../components/PlayerProfileModal";
 import { COLORS } from "../colors";
 import { calcularRanking, jornadasConGrupos } from "../data";
 
-export function RankingScreen({ jornadas }) {
+export function RankingScreen({ jornadas, ajustes = [] }) {
   const conGrupos = jornadasConGrupos(jornadas);
   const [jornadaFiltro, setJornadaFiltro] = useState("todas");
   const [abierto, setAbierto] = useState(null);
   const [perfil, setPerfil] = useState(null);
 
   const jornadasParaRanking = jornadaFiltro === "todas" ? jornadas : conGrupos.filter((j) => j.id === jornadaFiltro);
-  const ranking = calcularRanking(jornadasParaRanking);
+  const ranking = calcularRanking(jornadasParaRanking, ajustes);
 
   return (
     <div className="px-5 pt-6 pb-24">
@@ -84,18 +84,24 @@ export function RankingScreen({ jornadas }) {
                 </div>
               </button>
               {abiertoAqui && (
-                <div
-                  className="px-4 pb-3 pt-1 flex items-center justify-between text-xs"
-                  style={{ color: top3 ? "#2A5651" : COLORS.limaSoft }}
-                >
-                  <span>
-                    Games: {p.diffGames >= 0 ? "+" : ""}
-                    {p.diffGames} ({p.rondas} rondas)
-                  </span>
-                  <span>Asistencia: +{p.asistencia}</span>
-                  <button className="font-bold underline" onClick={() => setPerfil(p)}>
-                    Ver perfil
-                  </button>
+                <div className="px-4 pb-3 pt-1" style={{ color: top3 ? "#2A5651" : COLORS.limaSoft }}>
+                  <div className="flex items-center justify-between text-xs flex-wrap gap-1">
+                    <span>
+                      Games: {p.diffGames >= 0 ? "+" : ""}
+                      {p.diffGames} ({p.rondas} rondas)
+                    </span>
+                    <span>Asistencia: +{p.asistencia}</span>
+                    {p.ajuste !== 0 && (
+                      <span>
+                        Ajustes: {p.ajuste >= 0 ? "+" : ""}
+                        {p.ajuste}
+                      </span>
+                    )}
+                    {p.penalizacionInactividad !== 0 && <span>Inactividad: {p.penalizacionInactividad}</span>}
+                    <button className="font-bold underline" onClick={() => setPerfil(p)}>
+                      Ver perfil
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { Users, Trophy, CircleDot, Settings } from "lucide-react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebase";
-import { watchJornadas } from "./data";
+import { watchAjustes, watchJornadas } from "./data";
 import { COLORS } from "./colors";
 import { PrincipalScreen } from "./screens/PrincipalScreen";
 import { ToastProvider } from "./toast";
@@ -36,6 +36,7 @@ const ADMIN_TAB = { id: "admin", label: "Admin", icon: Settings };
 export default function App() {
   const [tab, setTab] = useState("principal");
   const [jornadas, setJornadas] = useState([]);
+  const [ajustes, setAjustes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [admin, setAdmin] = useState(false);
   const [mostrarLogin, setMostrarLogin] = useState(false);
@@ -50,6 +51,8 @@ export default function App() {
     );
     return unsub;
   }, []);
+
+  useEffect(() => watchAjustes(setAjustes, () => {}), []);
 
   useEffect(() => onAuthStateChanged(auth, (user) => setAdmin(!!user)), []);
 
@@ -118,9 +121,9 @@ export default function App() {
             ) : (
               <div key={tab} className="animar-tab">
                 {tab === "principal" && <PrincipalScreen jornadas={jornadas} admin={admin} />}
-                {tab === "ranking" && <RankingScreen jornadas={jornadas} />}
+                {tab === "ranking" && <RankingScreen jornadas={jornadas} ajustes={ajustes} />}
                 {tab === "pelotas" && <PelotasScreen jornadas={jornadas} admin={admin} />}
-                {tab === "admin" && admin && <AdminScreen jornadas={jornadas} />}
+                {tab === "admin" && admin && <AdminScreen jornadas={jornadas} ajustes={ajustes} />}
               </div>
             )}
           </Suspense>

@@ -36,5 +36,22 @@ service cloud.firestore {
       allow create, update: if esAdmin() && jornadaValida(request.resource.data);
       allow delete: if esAdmin();
     }
+
+    // Ajustes manuales de puntos (puntuación inicial, penalizaciones,
+    // exenciones, etc.). Mismo patrón que jornadaValida: solo campos
+    // conocidos, con el tipo correcto.
+    function ajusteValido(datos) {
+      return datos.keys().hasOnly(['jugador', 'puntos', 'motivo', 'fecha'])
+        && datos.jugador is string
+        && datos.puntos is number
+        && (!('motivo' in datos) || datos.motivo is string)
+        && (!('fecha' in datos) || datos.fecha is string);
+    }
+
+    match /ajustes/{ajusteId} {
+      allow get, list: if true;
+      allow create, update: if esAdmin() && ajusteValido(request.resource.data);
+      allow delete: if esAdmin();
+    }
   }
 }

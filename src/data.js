@@ -1,4 +1,5 @@
 import {
+  addDoc,
   collection,
   deleteDoc,
   deleteField,
@@ -18,6 +19,7 @@ import { db } from "./firebase";
 import { SEED_JORNADAS } from "./seedData";
 
 const jornadasCol = collection(db, "jornadas");
+const ajustesCol = collection(db, "ajustes");
 
 export function watchJornadas(callback, onError) {
   const q = query(jornadasCol, orderBy("orden", "asc"));
@@ -26,6 +28,31 @@ export function watchJornadas(callback, onError) {
     (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
     onError
   );
+}
+
+export function watchAjustes(callback, onError) {
+  return onSnapshot(
+    ajustesCol,
+    (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    onError
+  );
+}
+
+// Ajuste manual de puntos: cubre casos que el reglamento deja a criterio
+// humano (puntuación inicial de un jugador nuevo, exención de una
+// penalización por lesión, cancelación el mismo día que desarma una
+// cancha, etc.) sin necesitar una regla de negocio distinta por caso.
+export async function crearAjuste(jugador, puntos, motivo) {
+  await addDoc(ajustesCol, {
+    jugador,
+    puntos: Number(puntos),
+    motivo: motivo || "",
+    fecha: new Date().toISOString().slice(0, 10),
+  });
+}
+
+export async function eliminarAjuste(ajusteId) {
+  await deleteDoc(doc(ajustesCol, ajusteId));
 }
 
 export function jornadasConGrupos(jornadas) {
@@ -209,16 +236,30 @@ export async function seedInitialData() {
   await batch.commit();
 }
 
-export function calcularRanking(jornadas) {
+// Penalización por inactividad: -5 pts, en vivo (no se guarda), para
+// cualquiera que ya haya jugado antes en la liga y lleve 4 semanas de
+// calendario o más sin aparecer desde la jornada más reciente con fecha.
+// Al volver a jugar, la penalización desaparece sola en el siguiente
+// cálculo — no es un evento que haya que revertir a mano. Para un caso
+// ambiguo (lesión, etc.) se compensa con un ajuste manual.
+const SEMANA_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function calcularRanking(jornadas, ajustes = []) {
   const stats = new Map();
   const asegurar = (nombre) => {
-    if (!stats.has(nombre)) stats.set(nombre, { diffGames: 0, jornadas: new Set(), rondas: 0, asistencia: 0 });
+    if (!stats.has(nombre))
+      stats.set(nombre, { diffGames: 0, jornadas: new Set(), rondas: 0, asistencia: 0, ultimaFecha: null });
     return stats.get(nombre);
   };
+
+  let fechaMasReciente = null;
 
   for (const jornada of jornadasConGrupos(jornadas)) {
     const invitados = jornada.invitados || [];
     const tardanzas = jornada.tardanzas || [];
+    if (jornada.fecha && (!fechaMasReciente || jornada.fecha > fechaMasReciente)) {
+      fechaMasReciente = jornada.fecha;
+    }
     for (const [grupo, jugadores] of Object.entries(jornada.grupos)) {
       // Con 2 o más invitados en la misma cancha, esa cancha deja de ser
       // puntuable para todos (miembros incluidos), tal como marca el
@@ -231,6 +272,7 @@ export function calcularRanking(jornadas) {
         const s = asegurar(j);
         s.jornadas.add(jornada.id);
         if (!tardanzas.includes(j)) s.asistencia += 2; // llegar tarde pierde el bono
+        if (jornada.fecha && (!s.ultimaFecha || jornada.fecha > s.ultimaFecha)) s.ultimaFecha = jornada.fecha;
       }
       const rondas = (jornada.resultados && jornada.resultados[grupo]) || [];
       for (const r of rondas) {
@@ -251,15 +293,31 @@ export function calcularRanking(jornadas) {
     }
   }
 
+  const ajustesPorJugador = {};
+  for (const a of ajustes) {
+    ajustesPorJugador[a.jugador] = (ajustesPorJugador[a.jugador] || 0) + a.puntos;
+  }
+  for (const nombre of Object.keys(ajustesPorJugador)) asegurar(nombre); // aparece aunque no haya jugado
+
   return Array.from(stats.entries())
-    .map(([nombre, s]) => ({
-      nombre,
-      diffGames: s.diffGames,
-      asistencia: s.asistencia,
-      rondas: s.rondas,
-      jornadasJugadas: s.jornadas.size,
-      pts: s.diffGames + s.asistencia,
-    }))
+    .map(([nombre, s]) => {
+      const ajuste = ajustesPorJugador[nombre] || 0;
+      let penalizacionInactividad = 0;
+      if (fechaMasReciente && s.ultimaFecha) {
+        const semanas = (new Date(fechaMasReciente) - new Date(s.ultimaFecha)) / SEMANA_MS;
+        if (semanas >= 4) penalizacionInactividad = -5;
+      }
+      return {
+        nombre,
+        diffGames: s.diffGames,
+        asistencia: s.asistencia,
+        ajuste,
+        penalizacionInactividad,
+        rondas: s.rondas,
+        jornadasJugadas: s.jornadas.size,
+        pts: s.diffGames + s.asistencia + ajuste + penalizacionInactividad,
+      };
+    })
     .sort((a, b) => b.pts - a.pts);
 }
 

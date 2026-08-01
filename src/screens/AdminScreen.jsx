@@ -4,9 +4,11 @@ import { COLORS } from "../colors";
 import {
   agregarParticipante,
   armarCanchasPorRanking,
+  crearAjuste,
   crearGrupo,
   crearJornada,
   editarGrupo,
+  eliminarAjuste,
   eliminarGrupo,
   eliminarJornada,
   exportarDatos,
@@ -246,7 +248,7 @@ function GrupoCard({ jornada, grupoNombre }) {
   );
 }
 
-function JornadaAdminCard({ jornada, conocidos, jornadas }) {
+function JornadaAdminCard({ jornada, conocidos, jornadas, ajustes }) {
   const [nuevoParticipante, setNuevoParticipante] = useState("");
   const [armando, setArmando] = useState(false);
   const showToast = useToast();
@@ -274,7 +276,7 @@ function JornadaAdminCard({ jornada, conocidos, jornadas }) {
     }
     setArmando(true);
     try {
-      const { canchasArmadas, sinCancha } = await armarCanchasPorRanking(jornada, jornadas);
+      const { canchasArmadas, sinCancha } = await armarCanchasPorRanking(jornada, jornadas, ajustes);
       showToast(
         sinCancha.length > 0
           ? `${canchasArmadas} cancha(s) armadas ✓ (${sinCancha.length} sin cancha por completar)`
@@ -420,7 +422,115 @@ function JornadaAdminCard({ jornada, conocidos, jornadas }) {
   );
 }
 
-export function AdminScreen({ jornadas }) {
+function AjustesDePuntos({ ajustes, conocidos }) {
+  const [jugador, setJugador] = useState("");
+  const [puntos, setPuntos] = useState("");
+  const [motivo, setMotivo] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const showToast = useToast();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!jugador.trim() || puntos === "") return;
+    setGuardando(true);
+    try {
+      await crearAjuste(jugador.trim(), puntos, motivo.trim());
+      setJugador("");
+      setPuntos("");
+      setMotivo("");
+      showToast("Ajuste guardado ✓");
+    } catch (err) {
+      showToast("No se pudo guardar el ajuste.", "error");
+    }
+    setGuardando(false);
+  };
+
+  const handleEliminar = (ajuste) => {
+    if (!confirm(`¿Borrar el ajuste de ${ajuste.puntos} pts a "${ajuste.jugador}"?`)) return;
+    eliminarAjuste(ajuste.id)
+      .then(() => showToast("Ajuste borrado ✓"))
+      .catch(() => showToast("No se pudo borrar el ajuste.", "error"));
+  };
+
+  return (
+    <div className="rounded-2xl p-4 mb-6" style={{ background: COLORS.canchaAlt, border: `1px solid ${COLORS.linea}` }}>
+      <p className="text-[11px] font-bold uppercase tracking-wide mb-1" style={{ color: COLORS.lima }}>
+        Ajustes de puntos
+      </p>
+      <p className="text-[10px] mb-3" style={{ color: COLORS.limaSoft }}>
+        Para casos que la app no decide sola: puntuación inicial de un jugador nuevo, cancelación el mismo día,
+        exención de una penalización, etc.
+      </p>
+
+      {ajustes.length > 0 && (
+        <div className="space-y-1.5 mb-3">
+          {ajustes.map((a) => (
+            <div key={a.id} className="flex items-center justify-between rounded-lg px-2.5 py-1.5" style={{ background: COLORS.cancha }}>
+              <div className="text-xs">
+                <span className="font-bold" style={{ color: COLORS.crema }}>
+                  {a.jugador}
+                </span>{" "}
+                <span style={{ color: a.puntos >= 0 ? COLORS.lima : "#F5716B" }}>
+                  {a.puntos >= 0 ? "+" : ""}
+                  {a.puntos}
+                </span>
+                {a.motivo && <span style={{ color: COLORS.limaSoft }}> · {a.motivo}</span>}
+              </div>
+              <button onClick={() => handleEliminar(a)} title="Borrar ajuste">
+                <Trash2 size={13} color="#F5716B" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            list="conocidos-ajustes"
+            placeholder="Jugador"
+            value={jugador}
+            onChange={(e) => setJugador(e.target.value)}
+            className="rounded-xl px-3 py-2 text-sm font-medium flex-1"
+            style={{ background: COLORS.cancha, color: COLORS.crema, border: `1px solid ${COLORS.linea}` }}
+          />
+          <datalist id="conocidos-ajustes">
+            {conocidos.map((n) => (
+              <option key={n} value={n} />
+            ))}
+          </datalist>
+          <input
+            type="number"
+            placeholder="Pts"
+            value={puntos}
+            onChange={(e) => setPuntos(e.target.value)}
+            className="rounded-xl px-3 py-2 text-sm font-mono font-bold w-20"
+            style={{ background: COLORS.cancha, color: COLORS.crema, border: `1px solid ${COLORS.linea}` }}
+          />
+        </div>
+        <input
+          type="text"
+          placeholder="Motivo (ej. Puntuación inicial)"
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+          className="rounded-xl px-3 py-2 text-sm font-medium"
+          style={{ background: COLORS.cancha, color: COLORS.crema, border: `1px solid ${COLORS.linea}` }}
+        />
+        <button
+          type="submit"
+          disabled={guardando}
+          className="rounded-xl py-2.5 text-sm font-black transition-transform active:scale-95"
+          style={{ background: COLORS.lima, color: COLORS.tinta }}
+        >
+          {guardando ? "Guardando…" : "Agregar ajuste"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export function AdminScreen({ jornadas, ajustes = [] }) {
   const conocidos = jugadoresConocidos(jornadas);
   const ordenadas = [...jornadas].sort((a, b) => b.orden - a.orden);
   const showToast = useToast();
@@ -455,9 +565,11 @@ export function AdminScreen({ jornadas }) {
 
       <NuevaJornadaForm jornadas={jornadas} />
 
+      <AjustesDePuntos ajustes={ajustes} conocidos={conocidos} />
+
       <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 lg:items-start">
         {ordenadas.map((j) => (
-          <JornadaAdminCard key={j.id} jornada={j} conocidos={conocidos} jornadas={jornadas} />
+          <JornadaAdminCard key={j.id} jornada={j} conocidos={conocidos} jornadas={jornadas} ajustes={ajustes} />
         ))}
       </div>
     </div>
