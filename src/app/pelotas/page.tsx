@@ -7,6 +7,7 @@ import {
   getJornadasHistorialPelotas,
   getJornadasProximasPelotas,
 } from "@/lib/data";
+import { READ_ONLY } from "@/lib/readonly";
 
 export default async function PelotasPage({
   searchParams,
@@ -76,36 +77,49 @@ export default async function PelotasPage({
             <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: COLORS.limaSoft }}>
               Participantes de esta jornada
             </p>
-            <form action={aplicarSugerenciaPelotas}>
-              <input type="hidden" name="jornadaId" value={jornadaActual.id} />
-              <button type="submit" className="text-[11px] font-bold underline" style={{ color: COLORS.lima }}>
-                Usar sugerencia
-              </button>
-            </form>
+            {!READ_ONLY && (
+              <form action={aplicarSugerenciaPelotas}>
+                <input type="hidden" name="jornadaId" value={jornadaActual.id} />
+                <button type="submit" className="text-[11px] font-bold underline" style={{ color: COLORS.lima }}>
+                  Usar sugerencia
+                </button>
+              </form>
+            )}
           </div>
           <div className="flex flex-wrap gap-2 mb-6">
             {jornadaActual.participantes.map((p) => {
               const asignado = jornadaActual.asignadosIds.has(p.id);
               const veces = conteo[p.nombre] ?? 0;
+              const chipStyle = {
+                background: asignado ? COLORS.lima : COLORS.canchaAlt,
+                border: `1px solid ${asignado ? COLORS.lima : COLORS.linea}`,
+              };
+              const chipContent = (
+                <>
+                  <span className="text-sm font-bold" style={{ color: asignado ? COLORS.tinta : COLORS.crema }}>
+                    {p.nombre}
+                  </span>
+                  <span className="text-[10px] font-bold" style={{ color: asignado ? "#2A5651" : COLORS.limaSoft }}>
+                    ·{veces}
+                  </span>
+                  {asignado && <Check size={13} color={COLORS.tinta} />}
+                </>
+              );
+
+              if (READ_ONLY) {
+                return (
+                  <div key={p.id} className="px-3 py-2 rounded-xl flex items-center gap-1.5" style={chipStyle}>
+                    {chipContent}
+                  </div>
+                );
+              }
+
               return (
                 <form key={p.id} action={toggleAsignacionPelotas}>
                   <input type="hidden" name="jornadaId" value={jornadaActual.id} />
                   <input type="hidden" name="jugadorId" value={p.id} />
-                  <button
-                    type="submit"
-                    className="px-3 py-2 rounded-xl flex items-center gap-1.5"
-                    style={{
-                      background: asignado ? COLORS.lima : COLORS.canchaAlt,
-                      border: `1px solid ${asignado ? COLORS.lima : COLORS.linea}`,
-                    }}
-                  >
-                    <span className="text-sm font-bold" style={{ color: asignado ? COLORS.tinta : COLORS.crema }}>
-                      {p.nombre}
-                    </span>
-                    <span className="text-[10px] font-bold" style={{ color: asignado ? "#2A5651" : COLORS.limaSoft }}>
-                      ·{veces}
-                    </span>
-                    {asignado && <Check size={13} color={COLORS.tinta} />}
+                  <button type="submit" className="px-3 py-2 rounded-xl flex items-center gap-1.5" style={chipStyle}>
+                    {chipContent}
                   </button>
                 </form>
               );

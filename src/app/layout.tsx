@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { COLORS } from "@/lib/colors";
 import { TabBar } from "@/components/TabBar";
+import { READ_ONLY } from "@/lib/readonly";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -33,6 +34,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 J
               </div>
             </div>
+
+            {READ_ONLY && (
+              <div className="mx-5 mb-2 rounded-lg px-3 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide" style={{ background: COLORS.canchaAlt, color: COLORS.limaSoft }}>
+                Solo lectura
+              </div>
+            )}
 
             <div style={{ minHeight: "70vh" }}>{children}</div>
 

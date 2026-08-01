@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { calcularBalancePelotas, sugerirAsignados } from "@/lib/data";
+import { READ_ONLY } from "@/lib/readonly";
 
 export async function toggleAsignacionPelotas(formData: FormData) {
+  if (READ_ONLY) throw new Error("Esta versión es de solo lectura.");
   const jornadaId = Number(formData.get("jornadaId"));
   const jugadorId = Number(formData.get("jugadorId"));
 
@@ -24,6 +26,7 @@ export async function toggleAsignacionPelotas(formData: FormData) {
 }
 
 export async function aplicarSugerenciaPelotas(formData: FormData) {
+  if (READ_ONLY) throw new Error("Esta versión es de solo lectura.");
   const jornadaId = Number(formData.get("jornadaId"));
 
   const jornada = await prisma.jornada.findUniqueOrThrow({
@@ -48,6 +51,7 @@ export async function aplicarSugerenciaPelotas(formData: FormData) {
 }
 
 export async function crearResultado(formData: FormData) {
+  if (READ_ONLY) throw new Error("Esta versión es de solo lectura.");
   const grupoId = Number(formData.get("grupoId"));
   const rotacion = String(formData.get("rotacion") ?? "");
   const gamesPareja1 = Number(formData.get("gamesPareja1"));

@@ -1,0 +1,28 @@
+# Config para Firebase App Hosting (https://firebase.google.com/docs/app-hosting).
+# Este backend sirve una versión de SOLO LECTURA de la app: al arrancar el
+# contenedor se corre `prisma migrate deploy && prisma db seed` (ver el script
+# "start" en package.json) contra un SQLite efímero en /tmp, y luego se sirve
+# Next.js con READ_ONLY=true, que oculta los formularios de edición y bloquea
+# las server actions de escritura.
+#
+# Nota: no se pudo probar un despliegue real contra Firebase en esta sesión
+# (no había credenciales/cuenta conectada). Revisa este archivo contra la
+# documentación vigente de App Hosting si algo no toma al conectar el repo.
+
+runConfig:
+  minInstances: 0
+  maxInstances: 1
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  - variable: READ_ONLY
+    value: "true"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: DATABASE_URL
+    value: "file:/tmp/dev.db"
+    availability:
+      - BUILD
+      - RUNTIME
