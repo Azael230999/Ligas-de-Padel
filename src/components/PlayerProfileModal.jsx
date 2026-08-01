@@ -7,12 +7,12 @@ export function PlayerProfileModal({ jornadas, nombre, stats, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
+      className="animar-fade fixed inset-0 z-50 flex items-end justify-center"
       style={{ background: "rgba(0,0,0,0.55)" }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-t-3xl px-5 pt-5 pb-8"
+        className="animar-hoja w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-t-3xl px-5 pt-5 pb-8"
         style={{ background: COLORS.cancha }}
         onClick={(e) => e.stopPropagation()}
       >

@@ -112,7 +112,7 @@ export function ResultadoForm({ jornadaId, grupoNombre, rotaciones, rondas = [] 
           <button
             type="submit"
             disabled={guardando}
-            className="rounded-xl py-2.5 text-sm font-black"
+            className="rounded-xl py-2.5 text-sm font-black transition-transform active:scale-95"
             style={{ background: COLORS.lima, color: COLORS.tinta }}
           >
             {guardando ? "Guardando…" : "Guardar resultado"}

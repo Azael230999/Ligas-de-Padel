@@ -64,7 +64,7 @@ function NuevaJornadaForm({ jornadas }) {
       <button
         type="submit"
         disabled={creando}
-        className="rounded-xl py-2.5 text-sm font-black"
+        className="rounded-xl py-2.5 text-sm font-black transition-transform active:scale-95"
         style={{ background: COLORS.lima, color: COLORS.tinta }}
       >
         {creando ? "Creando…" : "Crear jornada"}
@@ -143,7 +143,7 @@ function ArmarGrupo({ jornada }) {
         <button
           onClick={handleCrear}
           disabled={seleccion.length !== 4 || guardando}
-          className="rounded-xl px-4 py-2 text-sm font-black whitespace-nowrap"
+          className="rounded-xl px-4 py-2 text-sm font-black whitespace-nowrap transition-transform active:scale-95"
           style={{
             background: seleccion.length === 4 ? COLORS.lima : COLORS.cancha,
             color: seleccion.length === 4 ? COLORS.tinta : COLORS.limaSoft,
@@ -306,7 +306,7 @@ function JornadaAdminCard({ jornada, conocidos }) {
         </datalist>
         <button
           type="submit"
-          className="rounded-xl px-4 py-2 text-sm font-black"
+          className="rounded-xl px-4 py-2 text-sm font-black transition-transform active:scale-95"
           style={{ background: COLORS.lima, color: COLORS.tinta }}
         >
           Agregar
@@ -364,7 +364,7 @@ export function AdminScreen({ jornadas }) {
 
       <NuevaJornadaForm jornadas={jornadas} />
 
-      <div className="space-y-3">
+      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 lg:items-start">
         {ordenadas.map((j) => (
           <JornadaAdminCard key={j.id} jornada={j} conocidos={conocidos} />
         ))}

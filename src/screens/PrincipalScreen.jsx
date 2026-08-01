@@ -74,7 +74,7 @@ export function PrincipalScreen({ jornadas, admin }) {
         </h2>
       </div>
 
-      <div className="space-y-2 mb-8">
+      <div className="space-y-2 mb-8 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
         {grupos.map(([nombreGrupo, jugadores], i) => (
           <details
             key={nombreGrupo}

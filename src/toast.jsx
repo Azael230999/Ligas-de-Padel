@@ -18,7 +18,7 @@ export function ToastProvider({ children }) {
       {children}
       {toast && (
         <div
-          className="fixed left-1/2 -translate-x-1/2 bottom-20 z-50 px-4 py-2.5 rounded-xl text-sm font-bold text-center max-w-[85%]"
+          className="animar-toast fixed left-1/2 -translate-x-1/2 bottom-20 z-50 px-4 py-2.5 rounded-xl text-sm font-bold text-center max-w-[85%]"
           style={{
             background: toast.tipo === "error" ? "#F5716B" : COLORS.lima,
             color: toast.tipo === "error" ? "#3A0E0C" : COLORS.tinta,

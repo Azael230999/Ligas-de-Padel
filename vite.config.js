@@ -9,4 +9,18 @@ const base = process.env.GH_PAGES ? "/Ligas-de-Padel/" : "/";
 export default defineConfig({
   base,
   plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      output: {
+        // El SDK de Firebase (auth + firestore) es lo más pesado del bundle
+        // y cambia mucho menos seguido que el código de la app: separarlo
+        // en su propio chunk deja que el navegador lo cachee entre
+        // despliegues en vez de re-descargarlo cada vez que se toca una
+        // pantalla.
+        manualChunks: {
+          firebase: ["firebase/app", "firebase/auth", "firebase/firestore"],
+        },
+      },
+    },
+  },
 });
