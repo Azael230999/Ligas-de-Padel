@@ -2,11 +2,56 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function esAdmin() {
+      return request.auth != null;
+    }
+
+    // Valida la forma general de una jornada: solo los campos esperados,
+    // con el tipo correcto. Los mapas grupos/resultados tienen claves
+    // dinámicas (nombre de cada grupo), así que solo se valida que sean
+    // mapas; su contenido interno lo arma siempre el cliente (data.js).
+    function jornadaValida(datos) {
+      return datos.keys().hasOnly(
+          ['nombre', 'orden', 'canchas', 'participantes', 'grupos', 'resultados', 'pelotasAsignados',
+           'fecha', 'temporada', 'invitados', 'tardanzas']
+        )
+        && datos.nombre is string
+        && datos.orden is number
+        && datos.canchas is number && datos.canchas > 0
+        && (!('participantes' in datos) || datos.participantes is list)
+        && (!('grupos' in datos) || datos.grupos is map)
+        && (!('resultados' in datos) || datos.resultados is map)
+        && (!('pelotasAsignados' in datos) || datos.pelotasAsignados is list)
+        && (!('fecha' in datos) || datos.fecha is string)
+        && (!('temporada' in datos) || datos.temporada is string)
+        && (!('invitados' in datos) || datos.invitados is list)
+        && (!('tardanzas' in datos) || datos.tardanzas is list);
+    }
+
     // Cualquiera puede ver las jornadas (link de solo lectura). Solo un
-    // usuario autenticado (el admin de la liga) puede editar.
+    // usuario autenticado (el admin de la liga) puede editar, y solo si
+    // el documento resultante respeta el esquema esperado.
     match /jornadas/{jornadaId} {
       allow get, list: if true;
-      allow create, update, delete: if request.auth != null;
+      allow create, update: if esAdmin() && jornadaValida(request.resource.data);
+      allow delete: if esAdmin();
+    }
+
+    // Ajustes manuales de puntos (puntuación inicial, penalizaciones,
+    // exenciones, etc.). Mismo patrón que jornadaValida: solo campos
+    // conocidos, con el tipo correcto.
+    function ajusteValido(datos) {
+      return datos.keys().hasOnly(['jugador', 'puntos', 'motivo', 'fecha'])
+        && datos.jugador is string
+        && datos.puntos is number
+        && (!('motivo' in datos) || datos.motivo is string)
+        && (!('fecha' in datos) || datos.fecha is string);
+    }
+
+    match /ajustes/{ajusteId} {
+      allow get, list: if true;
+      allow create, update: if esAdmin() && ajusteValido(request.resource.data);
+      allow delete: if esAdmin();
     }
   }
 }

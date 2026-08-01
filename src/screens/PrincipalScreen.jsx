@@ -1,36 +1,50 @@
 import { useState } from "react";
 import { Trophy, Users } from "lucide-react";
 import { Chip } from "../components/Chip";
+import { EmptyState } from "../components/EmptyState";
 import { ResultadoForm } from "../components/ResultadoForm";
+import { ResultadoRow } from "../components/ResultadoRow";
 import { COLORS } from "../colors";
 import { jornadasConGrupos, seedInitialData } from "../data";
-import { pairingsDeCuatro, rotacionYaJugada } from "../pairings";
+import { pairingsDeCuatro } from "../pairings";
+import { useToast } from "../toast";
 
 export function PrincipalScreen({ jornadas, admin }) {
   const conGrupos = jornadasConGrupos(jornadas);
   const [jornadaNombre, setJornadaNombre] = useState(null);
   const [sembrando, setSembrando] = useState(false);
+  const showToast = useToast();
 
   if (conGrupos.length === 0) {
     return (
       <div className="px-5 pt-6 pb-24">
-        <p className="text-sm mb-4" style={{ color: COLORS.limaSoft }}>
-          Todavía no hay jornadas con grupos armados.
-        </p>
-        {admin && (
-          <button
-            disabled={sembrando}
-            onClick={async () => {
-              setSembrando(true);
-              await seedInitialData().catch(() => {});
-              setSembrando(false);
-            }}
-            className="rounded-xl px-4 py-2.5 text-sm font-black"
-            style={{ background: COLORS.lima, color: COLORS.tinta }}
-          >
-            {sembrando ? "Cargando…" : "Cargar datos de ejemplo"}
-          </button>
-        )}
+        <EmptyState
+          mensaje={
+            admin
+              ? "Todavía no hay jornadas con grupos armados. Créalas desde la pestaña Admin, o carga datos de ejemplo para explorar la app."
+              : "Todavía no hay jornadas con grupos armados."
+          }
+        >
+          {admin && (
+            <button
+              disabled={sembrando}
+              onClick={async () => {
+                setSembrando(true);
+                try {
+                  await seedInitialData();
+                  showToast("Datos de ejemplo cargados ✓");
+                } catch (err) {
+                  showToast("No se pudieron cargar los datos de ejemplo.", "error");
+                }
+                setSembrando(false);
+              }}
+              className="rounded-xl px-4 py-2.5 text-sm font-black"
+              style={{ background: COLORS.lima, color: COLORS.tinta }}
+            >
+              {sembrando ? "Cargando…" : "Cargar datos de ejemplo"}
+            </button>
+          )}
+        </EmptyState>
       </div>
     );
   }
@@ -60,7 +74,7 @@ export function PrincipalScreen({ jornadas, admin }) {
         </h2>
       </div>
 
-      <div className="space-y-2 mb-8">
+      <div className="space-y-2 mb-8 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
         {grupos.map(([nombreGrupo, jugadores], i) => (
           <details
             key={nombreGrupo}
@@ -100,7 +114,7 @@ export function PrincipalScreen({ jornadas, admin }) {
       <div className="space-y-4">
         {grupos.map(([nombreGrupo, jugadores]) => {
           const rondas = (jornadaActual.resultados && jornadaActual.resultados[nombreGrupo]) || [];
-          const rotaciones = pairingsDeCuatro(jugadores).filter((r) => !rotacionYaJugada(rondas, r));
+          const rotaciones = pairingsDeCuatro(jugadores);
           return (
             <div key={nombreGrupo} className="space-y-1.5">
               <p className="text-[11px] font-bold uppercase tracking-wide mb-1.5" style={{ color: COLORS.lima }}>
@@ -112,28 +126,24 @@ export function PrincipalScreen({ jornadas, admin }) {
                 </p>
               ) : (
                 rondas.map((r, i) => (
-                  <div
+                  <ResultadoRow
                     key={i}
-                    className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
-                    style={{ background: COLORS.canchaAlt, border: `1px solid ${COLORS.linea}` }}
-                  >
-                    <div className="text-sm leading-snug" style={{ color: COLORS.crema }}>
-                      <p>
-                        <span className="font-bold">{r.pareja1.join(", ")}</span>
-                      </p>
-                      <p style={{ color: COLORS.limaSoft }}>vs</p>
-                      <p>
-                        <span className="font-bold">{r.pareja2.join(", ")}</span>
-                      </p>
-                    </div>
-                    <span className="text-base font-black font-mono flex-shrink-0" style={{ color: COLORS.lima }}>
-                      {r.marcador}
-                    </span>
-                  </div>
+                    jornadaId={jornadaActual.id}
+                    grupoNombre={nombreGrupo}
+                    resultado={r}
+                    index={i}
+                    resultadosActuales={rondas}
+                    admin={admin}
+                  />
                 ))
               )}
               {admin && (
-                <ResultadoForm jornadaId={jornadaActual.id} grupoNombre={nombreGrupo} rotaciones={rotaciones} />
+                <ResultadoForm
+                  jornadaId={jornadaActual.id}
+                  grupoNombre={nombreGrupo}
+                  rotaciones={rotaciones}
+                  rondas={rondas}
+                />
               )}
             </div>
           );

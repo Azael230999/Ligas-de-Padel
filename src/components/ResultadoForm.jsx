@@ -1,14 +1,21 @@
 import { useState } from "react";
 import { COLORS } from "../colors";
 import { crearResultado } from "../data";
+import { rotacionYaJugada } from "../pairings";
+import { useToast } from "../toast";
 
-export function ResultadoForm({ jornadaId, grupoNombre, rotaciones }) {
+// Se muestran todas las rotaciones posibles, no solo las que faltan por
+// jugar: así se puede capturar una revancha de un partido que ya se jugó,
+// en vez de que el formulario desaparezca cuando ya se jugaron las 3.
+export function ResultadoForm({ jornadaId, grupoNombre, rotaciones, rondas = [] }) {
   const [abierto, setAbierto] = useState(false);
-  const [rotacion, setRotacion] = useState(rotaciones[0]?.value ?? "");
+  const primeraSinJugar = rotaciones.find((r) => !rotacionYaJugada(rondas, r));
+  const [rotacion, setRotacion] = useState((primeraSinJugar ?? rotaciones[0])?.value ?? "");
   const [g1, setG1] = useState("");
   const [g2, setG2] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+  const showToast = useToast();
 
   if (rotaciones.length === 0) return null;
 
@@ -27,8 +34,10 @@ export function ResultadoForm({ jornadaId, grupoNombre, rotaciones }) {
       setG1("");
       setG2("");
       setAbierto(false);
+      showToast("Resultado guardado ✓");
     } catch (err) {
       setError("No se pudo guardar. ¿Iniciaste sesión como admin?");
+      showToast("No se pudo guardar el resultado.", "error");
     }
     setGuardando(false);
   };
@@ -57,6 +66,7 @@ export function ResultadoForm({ jornadaId, grupoNombre, rotaciones }) {
               {rotaciones.map((r) => (
                 <option key={r.value} value={r.value}>
                   {r.label}
+                  {rotacionYaJugada(rondas, r) ? " (ya jugado, capturar revancha)" : ""}
                 </option>
               ))}
             </select>
@@ -102,7 +112,7 @@ export function ResultadoForm({ jornadaId, grupoNombre, rotaciones }) {
           <button
             type="submit"
             disabled={guardando}
-            className="rounded-xl py-2.5 text-sm font-black"
+            className="rounded-xl py-2.5 text-sm font-black transition-transform active:scale-95"
             style={{ background: COLORS.lima, color: COLORS.tinta }}
           >
             {guardando ? "Guardando…" : "Guardar resultado"}

@@ -72,8 +72,20 @@ Ranking y balance de pelotas se calculan en el cliente a partir de todos los doc
 ## Seguridad (`firestore.rules`)
 
 Cualquiera puede leer `jornadas` (link de solo lectura). Solo un usuario autenticado (el admin de
-la liga) puede crear/editar/borrar. No hay roles ni multi-tenant: basta con que exista una sola
-cuenta de Firebase Auth para el admin.
+la liga) puede crear/editar/borrar, y solo si el documento respeta el esquema esperado (nombre,
+orden y canchas con el tipo correcto, sin campos desconocidos). No hay roles ni multi-tenant:
+cualquier cuenta de Firebase Auth cuenta como admin, no se distingue por UID.
+
+### Varios admins (ya es gratis, no requiere código)
+
+Firebase Authentication no cobra por número de usuarios en el plan gratuito (Spark), así que se
+puede agregar más de un admin (por ejemplo, otra persona de la liga que también capture
+resultados) sin tocar el código ni pagar nada extra:
+
+1. **Consola de Firebase → Build → Authentication → pestaña Users → Add user.**
+2. Captura el correo y contraseña de esa persona y guarda.
+3. Esa persona entra desde la app con "Entrar como admin" usando ese correo/contraseña — tiene los
+   mismos permisos que cualquier otro admin (no hay niveles de acceso distintos).
 
 ## Desplegar
 

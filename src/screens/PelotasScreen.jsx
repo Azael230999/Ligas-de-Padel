@@ -1,23 +1,26 @@
 import { useState } from "react";
 import { Check, CircleDot } from "lucide-react";
 import { Chip } from "../components/Chip";
+import { EmptyState } from "../components/EmptyState";
 import { COLORS } from "../colors";
 import {
   aplicarSugerenciaPelotas,
   calcularBalancePelotas,
   jornadasHistorialPelotas,
-  jornadasProximasPelotas,
+  jornadasPelotasPendientes,
   sugerirAsignados,
   toggleAsignacionPelotas,
 } from "../data";
+import { useToast } from "../toast";
 
 export function PelotasScreen({ jornadas, admin }) {
-  const proximas = jornadasProximasPelotas(jornadas);
+  const asignables = jornadasPelotasPendientes(jornadas);
   const historial = jornadasHistorialPelotas(jornadas);
   const { conteo, jugadas } = calcularBalancePelotas(jornadas);
   const [jornadaNombre, setJornadaNombre] = useState(null);
+  const showToast = useToast();
 
-  const jornadaActual = proximas.find((j) => j.nombre === jornadaNombre) ?? proximas[0];
+  const jornadaActual = asignables.find((j) => j.nombre === jornadaNombre) ?? asignables[0];
   const asignados = new Set(jornadaActual?.pelotasAsignados || []);
 
   const balanceOrdenado = Object.keys(jugadas).sort((a, b) => {
@@ -40,17 +43,18 @@ export function PelotasScreen({ jornadas, admin }) {
       </p>
 
       {!jornadaActual ? (
-        <p className="text-sm px-1" style={{ color: COLORS.limaSoft }}>
-          No hay jornadas próximas con participantes confirmados.
-        </p>
+        <EmptyState mensaje="No hay jornadas con participantes confirmados todavía." />
       ) : (
         <>
           <div className="flex gap-2 overflow-x-auto pb-4 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
-            {proximas.map((j) => (
-              <Chip key={j.nombre} active={jornadaActual.nombre === j.nombre} onClick={() => setJornadaNombre(j.nombre)}>
-                {j.nombre}
-              </Chip>
-            ))}
+            {asignables.map((j) => {
+              const resuelto = (j.pelotasAsignados || []).length >= j.canchas;
+              return (
+                <Chip key={j.nombre} active={jornadaActual.nombre === j.nombre} onClick={() => setJornadaNombre(j.nombre)}>
+                  {j.nombre} {resuelto ? "✓" : ""}
+                </Chip>
+              );
+            })}
           </div>
 
           <div
@@ -81,7 +85,9 @@ export function PelotasScreen({ jornadas, admin }) {
                 style={{ color: COLORS.lima }}
                 onClick={() => {
                   const sugeridos = sugerirAsignados(jornadaActual.participantes, jornadaActual.canchas, conteo);
-                  aplicarSugerenciaPelotas(jornadaActual.id, sugeridos).catch(() => {});
+                  aplicarSugerenciaPelotas(jornadaActual.id, sugeridos)
+                    .then(() => showToast("Sugerencia aplicada ✓"))
+                    .catch(() => showToast("No se pudo aplicar la sugerencia.", "error"));
                 }}
               >
                 Usar sugerencia
@@ -116,12 +122,19 @@ export function PelotasScreen({ jornadas, admin }) {
                 );
               }
 
+              const handleToggle = () => {
+                if (asignado && !confirm(`¿Quitar a "${p}" del rol de pelotas de esta jornada?`)) return;
+                toggleAsignacionPelotas(jornadaActual.id, p, asignado)
+                  .then(() => showToast(asignado ? "Quitado ✓" : "Asignado ✓"))
+                  .catch(() => showToast("No se pudo actualizar.", "error"));
+              };
+
               return (
                 <button
                   key={p}
                   className="px-3 py-2 rounded-xl flex items-center gap-1.5"
                   style={chipStyle}
-                  onClick={() => toggleAsignacionPelotas(jornadaActual.id, p, asignado).catch(() => {})}
+                  onClick={handleToggle}
                 >
                   {chipContent}
                 </button>
