@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Trophy, Users } from "lucide-react";
 import { Chip } from "../components/Chip";
+import { EmptyState } from "../components/EmptyState";
 import { ResultadoForm } from "../components/ResultadoForm";
 import { ResultadoRow } from "../components/ResultadoRow";
 import { COLORS } from "../colors";
@@ -17,28 +18,33 @@ export function PrincipalScreen({ jornadas, admin }) {
   if (conGrupos.length === 0) {
     return (
       <div className="px-5 pt-6 pb-24">
-        <p className="text-sm mb-4" style={{ color: COLORS.limaSoft }}>
-          Todavía no hay jornadas con grupos armados.
-        </p>
-        {admin && (
-          <button
-            disabled={sembrando}
-            onClick={async () => {
-              setSembrando(true);
-              try {
-                await seedInitialData();
-                showToast("Datos de ejemplo cargados ✓");
-              } catch (err) {
-                showToast("No se pudieron cargar los datos de ejemplo.", "error");
-              }
-              setSembrando(false);
-            }}
-            className="rounded-xl px-4 py-2.5 text-sm font-black"
-            style={{ background: COLORS.lima, color: COLORS.tinta }}
-          >
-            {sembrando ? "Cargando…" : "Cargar datos de ejemplo"}
-          </button>
-        )}
+        <EmptyState
+          mensaje={
+            admin
+              ? "Todavía no hay jornadas con grupos armados. Créalas desde la pestaña Admin, o carga datos de ejemplo para explorar la app."
+              : "Todavía no hay jornadas con grupos armados."
+          }
+        >
+          {admin && (
+            <button
+              disabled={sembrando}
+              onClick={async () => {
+                setSembrando(true);
+                try {
+                  await seedInitialData();
+                  showToast("Datos de ejemplo cargados ✓");
+                } catch (err) {
+                  showToast("No se pudieron cargar los datos de ejemplo.", "error");
+                }
+                setSembrando(false);
+              }}
+              className="rounded-xl px-4 py-2.5 text-sm font-black"
+              style={{ background: COLORS.lima, color: COLORS.tinta }}
+            >
+              {sembrando ? "Cargando…" : "Cargar datos de ejemplo"}
+            </button>
+          )}
+        </EmptyState>
       </div>
     );
   }

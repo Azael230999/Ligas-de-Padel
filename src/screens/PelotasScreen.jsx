@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, CircleDot } from "lucide-react";
 import { Chip } from "../components/Chip";
+import { EmptyState } from "../components/EmptyState";
 import { COLORS } from "../colors";
 import {
   aplicarSugerenciaPelotas,
@@ -42,9 +43,7 @@ export function PelotasScreen({ jornadas, admin }) {
       </p>
 
       {!jornadaActual ? (
-        <p className="text-sm px-1" style={{ color: COLORS.limaSoft }}>
-          No hay jornadas con participantes confirmados todavía.
-        </p>
+        <EmptyState mensaje="No hay jornadas con participantes confirmados todavía." />
       ) : (
         <>
           <div className="flex gap-2 overflow-x-auto pb-4 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>

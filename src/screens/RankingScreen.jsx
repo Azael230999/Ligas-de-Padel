@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Trophy } from "lucide-react";
+import { EmptyState } from "../components/EmptyState";
 import { COLORS } from "../colors";
 import { calcularRanking } from "../data";
 
@@ -18,6 +19,10 @@ export function RankingScreen({ jornadas }) {
       <p className="text-xs mb-5" style={{ color: COLORS.limaSoft }}>
         Puntos = (games ganados − games perdidos) de todas las rondas + 2 pts de asistencia por jornada jugada.
       </p>
+
+      {ranking.length === 0 && (
+        <EmptyState mensaje="Todavía no hay resultados capturados para armar un ranking." />
+      )}
 
       <div className="space-y-1.5">
         {ranking.map((p, i) => {

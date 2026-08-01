@@ -1,8 +1,16 @@
 import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Share2, Trash2 } from "lucide-react";
 import { COLORS } from "../colors";
 import { editarResultado, eliminarResultado } from "../data";
 import { useToast } from "../toast";
+
+function compartirPorWhatsApp(grupoNombre, resultado) {
+  const texto =
+    `🎾 ${grupoNombre}\n` +
+    `${resultado.pareja1.join(" y ")} vs ${resultado.pareja2.join(" y ")}\n` +
+    `Resultado: ${resultado.marcador}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank");
+}
 
 export function ResultadoRow({ jornadaId, grupoNombre, resultado, index, resultadosActuales, admin }) {
   const [editando, setEditando] = useState(false);
@@ -111,16 +119,21 @@ export function ResultadoRow({ jornadaId, grupoNombre, resultado, index, resulta
         <span className="text-base font-black font-mono" style={{ color: COLORS.lima }}>
           {resultado.marcador}
         </span>
-        {admin && (
-          <div className="flex items-center gap-2">
-            <button onClick={empezarEdicion} title="Editar marcador">
-              <Pencil size={14} color={COLORS.limaSoft} />
-            </button>
-            <button onClick={eliminar} title="Borrar resultado">
-              <Trash2 size={14} color="#F5716B" />
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <button onClick={() => compartirPorWhatsApp(grupoNombre, resultado)} title="Compartir por WhatsApp">
+            <Share2 size={14} color={COLORS.limaSoft} />
+          </button>
+          {admin && (
+            <>
+              <button onClick={empezarEdicion} title="Editar marcador">
+                <Pencil size={14} color={COLORS.limaSoft} />
+              </button>
+              <button onClick={eliminar} title="Borrar resultado">
+                <Trash2 size={14} color="#F5716B" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
