@@ -5,6 +5,8 @@ import {
   agregarParticipante,
   crearGrupo,
   crearJornada,
+  editarGrupo,
+  eliminarGrupo,
   eliminarJornada,
   jugadoresConocidos,
   quitarParticipante,
@@ -148,6 +150,71 @@ function ArmarGrupo({ jornada }) {
   );
 }
 
+function GrupoCard({ jornada, grupoNombre }) {
+  const jugadores = jornada.grupos[grupoNombre];
+  const disponibles = (jornada.participantes || []).filter(
+    (p) => !Object.values(jornada.grupos || {}).some((js) => js.includes(p))
+  );
+
+  const quitar = (nombre) => {
+    editarGrupo(jornada.id, grupoNombre, jugadores.filter((j) => j !== nombre)).catch(() => {
+      alert("No se pudo quitar al jugador.");
+    });
+  };
+
+  const agregar = (nombre) => {
+    if (jugadores.length >= 4) return;
+    editarGrupo(jornada.id, grupoNombre, [...jugadores, nombre]).catch(() => {
+      alert("No se pudo agregar al jugador.");
+    });
+  };
+
+  const handleEliminarGrupo = () => {
+    if (!confirm(`¿Borrar "${grupoNombre}"? También se borran sus resultados capturados.`)) return;
+    eliminarGrupo(jornada.id, grupoNombre).catch(() => {
+      alert("No se pudo borrar el grupo.");
+    });
+  };
+
+  return (
+    <div className="mb-3 pb-3" style={{ borderBottom: `1px solid ${COLORS.linea}` }}>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-sm font-bold" style={{ color: COLORS.crema }}>
+          {grupoNombre}
+        </span>
+        <button onClick={handleEliminarGrupo} title="Borrar grupo">
+          <Trash2 size={14} color="#F5716B" />
+        </button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {jugadores.map((j) => (
+          <button
+            key={j}
+            onClick={() => quitar(j)}
+            title="Quitar del grupo"
+            className="px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"
+            style={{ background: COLORS.lima, color: COLORS.tinta }}
+          >
+            {j} <span>×</span>
+          </button>
+        ))}
+        {jugadores.length < 4 &&
+          disponibles.map((p) => (
+            <button
+              key={p}
+              onClick={() => agregar(p)}
+              title="Agregar al grupo"
+              className="px-3 py-1 rounded-full text-xs font-bold"
+              style={{ background: "transparent", color: COLORS.limaSoft, border: `1px dashed ${COLORS.linea}` }}
+            >
+              + {p}
+            </button>
+          ))}
+      </div>
+    </div>
+  );
+}
+
 function JornadaAdminCard({ jornada, conocidos }) {
   const [nuevoParticipante, setNuevoParticipante] = useState("");
 
@@ -222,13 +289,11 @@ function JornadaAdminCard({ jornada, conocidos }) {
 
       {Object.keys(jornada.grupos || {}).length > 0 && (
         <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${COLORS.linea}` }}>
-          <p className="text-[11px] font-bold uppercase tracking-wide mb-1.5" style={{ color: COLORS.limaSoft }}>
-            Grupos armados
+          <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: COLORS.limaSoft }}>
+            Grupos armados (toca a alguien para quitarlo, o "+ nombre" para agregarlo)
           </p>
-          {Object.entries(jornada.grupos).map(([nombre, jugadores]) => (
-            <p key={nombre} className="text-sm mb-1" style={{ color: COLORS.crema }}>
-              <span className="font-bold">{nombre}:</span> {jugadores.join(", ")}
-            </p>
+          {Object.keys(jornada.grupos).map((nombre) => (
+            <GrupoCard key={nombre} jornada={jornada} grupoNombre={nombre} />
           ))}
         </div>
       )}

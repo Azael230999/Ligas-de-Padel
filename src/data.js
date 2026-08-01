@@ -1,6 +1,7 @@
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   FieldPath,
   arrayUnion,
@@ -97,6 +98,22 @@ export async function quitarParticipante(jornadaId, nombre) {
 export async function crearGrupo(jornadaId, grupoNombre, jugadores) {
   const ref = doc(db, "jornadas", jornadaId);
   await updateDoc(ref, new FieldPath("grupos", grupoNombre), jugadores);
+}
+
+// Mismo cambio que crearGrupo (sobreescribe el arreglo de jugadores del
+// grupo); se usa un nombre distinto solo para que se lea claro en el
+// llamador si se está armando un grupo nuevo o editando uno existente.
+export const editarGrupo = crearGrupo;
+
+export async function eliminarGrupo(jornadaId, grupoNombre) {
+  const ref = doc(db, "jornadas", jornadaId);
+  await updateDoc(
+    ref,
+    new FieldPath("grupos", grupoNombre),
+    deleteField(),
+    new FieldPath("resultados", grupoNombre),
+    deleteField()
+  );
 }
 
 export async function seedInitialData() {
