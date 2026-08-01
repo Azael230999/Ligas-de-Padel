@@ -2,6 +2,8 @@ import { Trophy } from "lucide-react";
 import { COLORS } from "@/lib/colors";
 import { calcularRanking } from "@/lib/data";
 
+export const dynamic = "force-dynamic";
+
 export default async function RankingPage() {
   const ranking = await calcularRanking();
 
