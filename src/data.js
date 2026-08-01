@@ -234,6 +234,27 @@ export function exportarDatos(jornadas) {
   URL.revokeObjectURL(url);
 }
 
+// Historial de un jugador: en qué jornadas jugó, con quién, y sus
+// partidos capturados en cada una. Se usa en la vista de perfil.
+export function perfilJugador(jornadas, nombre) {
+  const historial = [];
+  for (const jornada of jornadasConGrupos(jornadas)) {
+    for (const [grupo, jugadores] of Object.entries(jornada.grupos)) {
+      if (!jugadores.includes(nombre)) continue;
+      const rondas = (jornada.resultados && jornada.resultados[grupo]) || [];
+      const partidos = rondas.filter((r) => r.pareja1.includes(nombre) || r.pareja2.includes(nombre));
+      historial.push({
+        jornadaId: jornada.id,
+        jornadaNombre: jornada.nombre,
+        grupo,
+        companeros: jugadores.filter((j) => j !== nombre),
+        partidos,
+      });
+    }
+  }
+  return historial.sort((a, b) => Number(b.jornadaId) - Number(a.jornadaId));
+}
+
 export function sugerirAsignados(participantes, canchas, conteo) {
   const orden = [...participantes].sort((a, b) => {
     const diff = (conteo[a] || 0) - (conteo[b] || 0);

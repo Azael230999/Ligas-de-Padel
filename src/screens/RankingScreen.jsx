@@ -1,12 +1,19 @@
 import { useState } from "react";
 import { Trophy } from "lucide-react";
+import { Chip } from "../components/Chip";
 import { EmptyState } from "../components/EmptyState";
+import { PlayerProfileModal } from "../components/PlayerProfileModal";
 import { COLORS } from "../colors";
-import { calcularRanking } from "../data";
+import { calcularRanking, jornadasConGrupos } from "../data";
 
 export function RankingScreen({ jornadas }) {
-  const ranking = calcularRanking(jornadas);
+  const conGrupos = jornadasConGrupos(jornadas);
+  const [jornadaFiltro, setJornadaFiltro] = useState("todas");
   const [abierto, setAbierto] = useState(null);
+  const [perfil, setPerfil] = useState(null);
+
+  const jornadasParaRanking = jornadaFiltro === "todas" ? jornadas : conGrupos.filter((j) => j.id === jornadaFiltro);
+  const ranking = calcularRanking(jornadasParaRanking);
 
   return (
     <div className="px-5 pt-6 pb-24">
@@ -16,9 +23,22 @@ export function RankingScreen({ jornadas }) {
           Ranking general
         </h2>
       </div>
-      <p className="text-xs mb-5" style={{ color: COLORS.limaSoft }}>
+      <p className="text-xs mb-4" style={{ color: COLORS.limaSoft }}>
         Puntos = (games ganados − games perdidos) de todas las rondas + 2 pts de asistencia por jornada jugada.
       </p>
+
+      {conGrupos.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-4 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
+          <Chip active={jornadaFiltro === "todas"} onClick={() => setJornadaFiltro("todas")}>
+            Todas
+          </Chip>
+          {conGrupos.map((j) => (
+            <Chip key={j.id} active={jornadaFiltro === j.id} onClick={() => setJornadaFiltro(j.id)}>
+              {j.nombre}
+            </Chip>
+          ))}
+        </div>
+      )}
 
       {ranking.length === 0 && (
         <EmptyState mensaje="Todavía no hay resultados capturados para armar un ranking." />
@@ -73,12 +93,19 @@ export function RankingScreen({ jornadas }) {
                     {p.diffGames} ({p.rondas} rondas)
                   </span>
                   <span>Asistencia: +{p.asistencia}</span>
+                  <button className="font-bold underline" onClick={() => setPerfil(p)}>
+                    Ver perfil
+                  </button>
                 </div>
               )}
             </div>
           );
         })}
       </div>
+
+      {perfil && (
+        <PlayerProfileModal jornadas={jornadas} nombre={perfil.nombre} stats={perfil} onClose={() => setPerfil(null)} />
+      )}
     </div>
   );
 }

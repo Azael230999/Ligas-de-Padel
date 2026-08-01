@@ -6,7 +6,7 @@ import { ResultadoForm } from "../components/ResultadoForm";
 import { ResultadoRow } from "../components/ResultadoRow";
 import { COLORS } from "../colors";
 import { jornadasConGrupos, seedInitialData } from "../data";
-import { pairingsDeCuatro, rotacionYaJugada } from "../pairings";
+import { pairingsDeCuatro } from "../pairings";
 import { useToast } from "../toast";
 
 export function PrincipalScreen({ jornadas, admin }) {
@@ -114,7 +114,7 @@ export function PrincipalScreen({ jornadas, admin }) {
       <div className="space-y-4">
         {grupos.map(([nombreGrupo, jugadores]) => {
           const rondas = (jornadaActual.resultados && jornadaActual.resultados[nombreGrupo]) || [];
-          const rotaciones = pairingsDeCuatro(jugadores).filter((r) => !rotacionYaJugada(rondas, r));
+          const rotaciones = pairingsDeCuatro(jugadores);
           return (
             <div key={nombreGrupo} className="space-y-1.5">
               <p className="text-[11px] font-bold uppercase tracking-wide mb-1.5" style={{ color: COLORS.lima }}>
@@ -138,7 +138,12 @@ export function PrincipalScreen({ jornadas, admin }) {
                 ))
               )}
               {admin && (
-                <ResultadoForm jornadaId={jornadaActual.id} grupoNombre={nombreGrupo} rotaciones={rotaciones} />
+                <ResultadoForm
+                  jornadaId={jornadaActual.id}
+                  grupoNombre={nombreGrupo}
+                  rotaciones={rotaciones}
+                  rondas={rondas}
+                />
               )}
             </div>
           );
