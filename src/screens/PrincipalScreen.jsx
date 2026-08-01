@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Trophy, Users } from "lucide-react";
 import { Chip } from "../components/Chip";
 import { ResultadoForm } from "../components/ResultadoForm";
+import { ResultadoRow } from "../components/ResultadoRow";
 import { COLORS } from "../colors";
 import { jornadasConGrupos, seedInitialData } from "../data";
 import { pairingsDeCuatro, rotacionYaJugada } from "../pairings";
@@ -112,24 +113,15 @@ export function PrincipalScreen({ jornadas, admin }) {
                 </p>
               ) : (
                 rondas.map((r, i) => (
-                  <div
+                  <ResultadoRow
                     key={i}
-                    className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
-                    style={{ background: COLORS.canchaAlt, border: `1px solid ${COLORS.linea}` }}
-                  >
-                    <div className="text-sm leading-snug" style={{ color: COLORS.crema }}>
-                      <p>
-                        <span className="font-bold">{r.pareja1.join(", ")}</span>
-                      </p>
-                      <p style={{ color: COLORS.limaSoft }}>vs</p>
-                      <p>
-                        <span className="font-bold">{r.pareja2.join(", ")}</span>
-                      </p>
-                    </div>
-                    <span className="text-base font-black font-mono flex-shrink-0" style={{ color: COLORS.lima }}>
-                      {r.marcador}
-                    </span>
-                  </div>
+                    jornadaId={jornadaActual.id}
+                    grupoNombre={nombreGrupo}
+                    resultado={r}
+                    index={i}
+                    resultadosActuales={rondas}
+                    admin={admin}
+                  />
                 ))
               )}
               {admin && (

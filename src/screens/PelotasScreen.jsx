@@ -6,18 +6,18 @@ import {
   aplicarSugerenciaPelotas,
   calcularBalancePelotas,
   jornadasHistorialPelotas,
-  jornadasProximasPelotas,
+  jornadasPelotasPendientes,
   sugerirAsignados,
   toggleAsignacionPelotas,
 } from "../data";
 
 export function PelotasScreen({ jornadas, admin }) {
-  const proximas = jornadasProximasPelotas(jornadas);
+  const asignables = jornadasPelotasPendientes(jornadas);
   const historial = jornadasHistorialPelotas(jornadas);
   const { conteo, jugadas } = calcularBalancePelotas(jornadas);
   const [jornadaNombre, setJornadaNombre] = useState(null);
 
-  const jornadaActual = proximas.find((j) => j.nombre === jornadaNombre) ?? proximas[0];
+  const jornadaActual = asignables.find((j) => j.nombre === jornadaNombre) ?? asignables[0];
   const asignados = new Set(jornadaActual?.pelotasAsignados || []);
 
   const balanceOrdenado = Object.keys(jugadas).sort((a, b) => {
@@ -41,16 +41,19 @@ export function PelotasScreen({ jornadas, admin }) {
 
       {!jornadaActual ? (
         <p className="text-sm px-1" style={{ color: COLORS.limaSoft }}>
-          No hay jornadas próximas con participantes confirmados.
+          No hay jornadas con participantes confirmados todavía.
         </p>
       ) : (
         <>
           <div className="flex gap-2 overflow-x-auto pb-4 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
-            {proximas.map((j) => (
-              <Chip key={j.nombre} active={jornadaActual.nombre === j.nombre} onClick={() => setJornadaNombre(j.nombre)}>
-                {j.nombre}
-              </Chip>
-            ))}
+            {asignables.map((j) => {
+              const resuelto = (j.pelotasAsignados || []).length >= j.canchas;
+              return (
+                <Chip key={j.nombre} active={jornadaActual.nombre === j.nombre} onClick={() => setJornadaNombre(j.nombre)}>
+                  {j.nombre} {resuelto ? "✓" : ""}
+                </Chip>
+              );
+            })}
           </div>
 
           <div

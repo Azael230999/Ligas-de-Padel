@@ -32,10 +32,15 @@ export function jornadasConGrupos(jornadas) {
   return jornadas.filter((j) => j.grupos && Object.keys(j.grupos).length > 0);
 }
 
-export function jornadasProximasPelotas(jornadas) {
-  return jornadas.filter((j) => !j.grupos && j.participantes && j.participantes.length > 0);
+// Jornadas donde todavía falta (o se quiere ajustar) quién lleva pelotas.
+// No depende de si ya se armaron grupos: se puede asignar antes, durante o
+// después de armar los grupos, para no quedar "atorado" sin poder resolverlo.
+export function jornadasPelotasPendientes(jornadas) {
+  return jornadas.filter((j) => j.participantes && j.participantes.length > 0);
 }
 
+// Recap de jornadas donde ya se jugó (hay grupos armados), para mostrar el
+// historial de quién llevó pelotas cada vez.
 export function jornadasHistorialPelotas(jornadas) {
   return jornadasConGrupos(jornadas);
 }
@@ -43,6 +48,17 @@ export function jornadasHistorialPelotas(jornadas) {
 export async function crearResultado(jornadaId, grupoNombre, resultado) {
   const ref = doc(db, "jornadas", jornadaId);
   await updateDoc(ref, new FieldPath("resultados", grupoNombre), arrayUnion(resultado));
+}
+
+export async function editarResultado(jornadaId, grupoNombre, resultadosActuales, index, nuevoResultado) {
+  const ref = doc(db, "jornadas", jornadaId);
+  const nuevos = resultadosActuales.map((r, i) => (i === index ? nuevoResultado : r));
+  await updateDoc(ref, new FieldPath("resultados", grupoNombre), nuevos);
+}
+
+export async function eliminarResultado(jornadaId, grupoNombre, resultadoActual) {
+  const ref = doc(db, "jornadas", jornadaId);
+  await updateDoc(ref, new FieldPath("resultados", grupoNombre), arrayRemove(resultadoActual));
 }
 
 export async function toggleAsignacionPelotas(jornadaId, jugador, yaAsignado) {
@@ -85,9 +101,18 @@ export async function eliminarJornada(jornadaId) {
   await deleteDoc(doc(db, "jornadas", jornadaId));
 }
 
-export async function agregarParticipante(jornadaId, nombre) {
+// Si ya existe un nombre igual sin importar mayúsculas/espacios (ej. "Juan"
+// vs "juan "), reusa esa versión en vez de crear a un jugador "fantasma"
+// distinto en el ranking y el balance de pelotas.
+export function resolverNombre(nombre, conocidos) {
+  const limpio = nombre.trim();
+  const existente = conocidos.find((c) => c.toLowerCase() === limpio.toLowerCase());
+  return existente || limpio;
+}
+
+export async function agregarParticipante(jornadaId, nombre, conocidos = []) {
   const ref = doc(db, "jornadas", jornadaId);
-  await updateDoc(ref, { participantes: arrayUnion(nombre) });
+  await updateDoc(ref, { participantes: arrayUnion(resolverNombre(nombre, conocidos)) });
 }
 
 export async function quitarParticipante(jornadaId, nombre) {
@@ -172,14 +197,17 @@ export function calcularRanking(jornadas) {
 }
 
 export function calcularBalancePelotas(jornadas) {
-  const historial = jornadasHistorialPelotas(jornadas);
   const conteo = {};
-  const jugadas = {};
-
-  for (const jornada of historial) {
+  for (const jornada of jornadas) {
     for (const nombre of jornada.pelotasAsignados || []) {
       conteo[nombre] = (conteo[nombre] || 0) + 1;
     }
+  }
+
+  // "Jugadas" = jornadas donde ya se armaron grupos (asistencia real),
+  // independiente de si el rol de pelotas ya se resolvió o no.
+  const jugadas = {};
+  for (const jornada of jornadasConGrupos(jornadas)) {
     const participantes = new Set();
     for (const jugadores of Object.values(jornada.grupos || {})) {
       for (const j of jugadores) participantes.add(j);

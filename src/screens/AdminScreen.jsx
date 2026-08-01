@@ -222,7 +222,7 @@ function JornadaAdminCard({ jornada, conocidos }) {
     e.preventDefault();
     const nombre = nuevoParticipante.trim();
     if (!nombre) return;
-    await agregarParticipante(jornada.id, nombre).catch(() => {});
+    await agregarParticipante(jornada.id, nombre, conocidos).catch(() => {});
     setNuevoParticipante("");
   };
 
