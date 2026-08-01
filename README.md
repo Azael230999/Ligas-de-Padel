@@ -46,9 +46,11 @@ Luego entra desde la app con ese correo/contraseña y usa **"Cargar datos de eje
 - **Ranking**: puntos = diferencia de games acumulada + 2 pts de asistencia por jornada jugada.
 - **Pelotas**: rol de quién lleva pelotas por jornada próxima, con sugerencia automática basada en
   quién ha llevado menos veces, e historial de jornadas ya jugadas.
+- **Admin** (solo visible con sesión iniciada): crear una jornada nueva, agregar/quitar quién
+  participa, armar los grupos de 4 eligiendo entre los participantes, y borrar una jornada.
 
 Sin iniciar sesión, todo se ve en modo lectura. Iniciando sesión (botón "Entrar como admin")
-aparecen los formularios de edición.
+aparecen los formularios de edición y la pestaña Admin.
 
 ## Modelo de datos
 
