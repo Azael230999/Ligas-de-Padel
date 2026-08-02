@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Trophy, Users } from "lucide-react";
 import { Chip } from "../components/Chip";
 import { EmptyState } from "../components/EmptyState";
+import { PelotaIcon } from "../components/PelotaIcon";
 import { ResultadoForm } from "../components/ResultadoForm";
 import { ResultadoRow } from "../components/ResultadoRow";
 import { COLORS } from "../colors";
@@ -49,8 +50,21 @@ export function PrincipalScreen({ jornadas, admin }) {
     );
   }
 
-  const jornadaActual = conGrupos.find((j) => j.nombre === jornadaNombre) ?? conGrupos[0];
+  // La más reciente (última en orden), para que la app abra directo en la
+  // próxima jornada en vez de en la más vieja de la lista.
+  const masReciente = conGrupos[conGrupos.length - 1];
+  const jornadaActual = conGrupos.find((j) => j.nombre === jornadaNombre) ?? masReciente;
   const grupos = Object.entries(jornadaActual.grupos);
+
+  // Para cada cancha de esta jornada, quién (si alguien) tiene asignado el
+  // rol de pelotas — cruzando pelotasAsignados contra los jugadores de cada
+  // grupo, ya que la asignación no guarda la cancha directamente.
+  const pelotasPorCancha = grupos
+    .map(([nombreCancha, jugadores]) => ({
+      nombreCancha,
+      asignado: (jornadaActual.pelotasAsignados || []).find((p) => jugadores.includes(p)),
+    }))
+    .filter((c) => c.asignado);
 
   return (
     <div className="px-5 pt-6 pb-24">
@@ -61,11 +75,50 @@ export function PrincipalScreen({ jornadas, admin }) {
       </div>
       <div className="flex gap-2 overflow-x-auto pb-5 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
         {conGrupos.map((j) => (
-          <Chip key={j.nombre} active={jornadaActual.nombre === j.nombre} onClick={() => setJornadaNombre(j.nombre)}>
+          <Chip
+            key={j.nombre}
+            active={jornadaActual.nombre === j.nombre}
+            onClick={() => setJornadaNombre(j.nombre)}
+            badge={j.nombre === masReciente.nombre ? "Próxima" : null}
+          >
             {j.nombre}
           </Chip>
         ))}
       </div>
+
+      {pelotasPorCancha.length > 0 && (
+        <div
+          className="rounded-2xl px-3.5 py-3 mb-5"
+          style={{
+            background: "linear-gradient(160deg, rgba(212,245,71,0.14), rgba(212,245,71,0.05))",
+            border: "1.3px solid rgba(212,245,71,0.35)",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <PelotaIcon size={17} />
+            <span className="text-[10px] font-black uppercase tracking-wide" style={{ color: COLORS.lima }}>
+              Rol de pelotas · esta jornada
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {pelotasPorCancha.map(({ nombreCancha, asignado }) => (
+              <span
+                key={nombreCancha}
+                className="flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full text-xs font-bold"
+                style={{ background: COLORS.tinta, color: COLORS.crema }}
+              >
+                <span
+                  className="text-[9px] font-black px-1.5 py-0.5 rounded"
+                  style={{ background: COLORS.lima, color: COLORS.tinta }}
+                >
+                  {nombreCancha}
+                </span>
+                {asignado}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 mb-3">
         <Users size={16} color={COLORS.lima} />

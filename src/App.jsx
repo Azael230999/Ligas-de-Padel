@@ -85,26 +85,20 @@ export default function App() {
           <PelotaIcon size={36} />
         </div>
 
-        <div
-          className="mx-5 md:mx-10 mb-2 rounded-lg px-3 py-1.5 flex items-center justify-between"
-          style={{ background: COLORS.canchaAlt }}
-        >
-          <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: COLORS.limaSoft }}>
-            {admin ? "Modo admin" : "Solo lectura"}
-          </span>
+        <div className="flex justify-end px-5 md:px-10 mb-3 -mt-1.5">
           {admin ? (
             <button
               onClick={() => signOut(auth)}
-              className="text-[10px] font-bold underline"
-              style={{ color: COLORS.lima }}
+              className="text-[10.5px] font-semibold"
+              style={{ color: COLORS.limaSoft, opacity: 0.8 }}
             >
               Salir
             </button>
           ) : (
             <button
               onClick={() => setMostrarLogin(true)}
-              className="text-[10px] font-bold underline"
-              style={{ color: COLORS.lima }}
+              className="text-[10.5px] font-semibold"
+              style={{ color: COLORS.limaSoft, opacity: 0.8 }}
             >
               Entrar como admin
             </button>
