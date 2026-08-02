@@ -69,7 +69,10 @@ export default function App() {
         style={{ background: COLORS.cancha, fontFamily: "'Inter', system-ui, sans-serif" }}
       >
       <ToastProvider>
-        <div className="px-5 md:px-10 pt-8 pb-2 flex items-center justify-between">
+        <div
+          className="px-5 md:px-10 pb-2 flex items-center justify-between"
+          style={{ paddingTop: "calc(env(safe-area-inset-top) + 2rem)" }}
+        >
           <div>
             <p className="text-[10px] uppercase tracking-[0.2em] font-bold" style={{ color: COLORS.lima }}>
               Country Pádel
@@ -131,7 +134,11 @@ export default function App() {
 
         <div
           className="fixed bottom-0 w-full max-w-sm md:max-w-2xl lg:max-w-4xl flex items-stretch"
-          style={{ background: COLORS.canchaAlt, borderTop: `1px solid ${COLORS.linea}` }}
+          style={{
+            background: COLORS.canchaAlt,
+            borderTop: `1px solid ${COLORS.linea}`,
+            paddingBottom: "env(safe-area-inset-bottom)",
+          }}
         >
           {tabs.map(({ id, label, icon: Icon }) => {
             const active = tab === id && !mostrarLogin;
