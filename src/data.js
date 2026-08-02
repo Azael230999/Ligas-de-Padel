@@ -359,6 +359,24 @@ export function exportarDatos(jornadas) {
   URL.revokeObjectURL(url);
 }
 
+// Importa jornadas nuevas desde un archivo (mismo formato que exportarDatos)
+// SIN tocar las que ya existen: a cada jornada del archivo se le asigna un
+// "orden"/id nuevo, continuando después del más alto que ya haya en la
+// base, sin importar qué "orden" traiga el archivo. Así se puede generar
+// un respaldo o una simulación aparte y pegarla encima de datos reales sin
+// riesgo de chocar ids ni sobreescribir nada.
+export async function importarDatos(jornadasActuales, jornadasNuevas) {
+  let siguienteOrden = Math.max(0, ...jornadasActuales.map((j) => j.orden)) + 1;
+  const batch = writeBatch(db);
+  for (const jornada of jornadasNuevas) {
+    const { id, ...datos } = jornada;
+    batch.set(doc(jornadasCol, String(siguienteOrden)), { ...datos, orden: siguienteOrden });
+    siguienteOrden += 1;
+  }
+  await batch.commit();
+  return jornadasNuevas.length;
+}
+
 // Historial de un jugador: en qué jornadas jugó, con quién, y sus
 // partidos capturados en cada una. Se usa en la vista de perfil.
 export function perfilJugador(jornadas, nombre) {

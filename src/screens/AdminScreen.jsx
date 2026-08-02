@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Clock, Download, Shuffle, Tag, Trash2, Users } from "lucide-react";
+import { useRef, useState } from "react";
+import { Clock, Download, Shuffle, Tag, Trash2, Upload, Users } from "lucide-react";
 import { COLORS } from "../colors";
 import {
   agregarParticipante,
@@ -12,6 +12,7 @@ import {
   eliminarGrupo,
   eliminarJornada,
   exportarDatos,
+  importarDatos,
   jugadoresConocidos,
   quitarParticipante,
   toggleInvitado,
@@ -534,6 +535,7 @@ export function AdminScreen({ jornadas, ajustes = [] }) {
   const conocidos = jugadoresConocidos(jornadas);
   const ordenadas = [...jornadas].sort((a, b) => b.orden - a.orden);
   const showToast = useToast();
+  const archivoRef = useRef(null);
 
   const handleExportar = () => {
     try {
@@ -541,6 +543,22 @@ export function AdminScreen({ jornadas, ajustes = [] }) {
       showToast("Respaldo descargado ✓");
     } catch (err) {
       showToast("No se pudo generar el respaldo.", "error");
+    }
+  };
+
+  const handleImportar = async (e) => {
+    const archivo = e.target.files[0];
+    e.target.value = ""; // permite volver a elegir el mismo archivo después
+    if (!archivo) return;
+    try {
+      const texto = await archivo.text();
+      const jornadasNuevas = JSON.parse(texto);
+      if (!Array.isArray(jornadasNuevas)) throw new Error("Formato inválido");
+      if (!confirm(`¿Agregar ${jornadasNuevas.length} jornada(s) del archivo? No se toca lo que ya existe.`)) return;
+      const total = await importarDatos(jornadas, jornadasNuevas);
+      showToast(`${total} jornada(s) importadas ✓`);
+    } catch (err) {
+      showToast("No se pudo importar el archivo.", "error");
     }
   };
 
@@ -553,14 +571,25 @@ export function AdminScreen({ jornadas, ajustes = [] }) {
             Administrar jornadas
           </h2>
         </div>
-        <button
-          onClick={handleExportar}
-          title="Descargar respaldo en JSON"
-          className="flex items-center gap-1 text-[11px] font-bold underline"
-          style={{ color: COLORS.lima }}
-        >
-          <Download size={13} /> Exportar
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => archivoRef.current?.click()}
+            title="Agregar jornadas desde un archivo .json"
+            className="flex items-center gap-1 text-[11px] font-bold underline"
+            style={{ color: COLORS.lima }}
+          >
+            <Upload size={13} /> Importar
+          </button>
+          <input ref={archivoRef} type="file" accept="application/json" className="hidden" onChange={handleImportar} />
+          <button
+            onClick={handleExportar}
+            title="Descargar respaldo en JSON"
+            className="flex items-center gap-1 text-[11px] font-bold underline"
+            style={{ color: COLORS.lima }}
+          >
+            <Download size={13} /> Exportar
+          </button>
+        </div>
       </div>
 
       <NuevaJornadaForm jornadas={jornadas} />
