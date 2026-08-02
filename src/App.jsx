@@ -4,6 +4,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebase";
 import { watchAjustes, watchJornadas } from "./data";
 import { COLORS } from "./colors";
+import { PelotaIcon } from "./components/PelotaIcon";
 import { PrincipalScreen } from "./screens/PrincipalScreen";
 import { ToastProvider } from "./toast";
 
@@ -78,15 +79,10 @@ export default function App() {
               Country Pádel
             </p>
             <h1 className="font-black text-2xl -mt-0.5" style={{ color: COLORS.crema }}>
-              Jornadas
+              Liga 1RA
             </h1>
           </div>
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center font-black text-sm"
-            style={{ background: COLORS.lima, color: COLORS.tinta }}
-          >
-            J
-          </div>
+          <PelotaIcon size={36} />
         </div>
 
         <div
