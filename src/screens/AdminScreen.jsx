@@ -249,7 +249,7 @@ function GrupoCard({ jornada, grupoNombre }) {
   );
 }
 
-function JornadaAdminCard({ jornada, conocidos, jornadas, ajustes }) {
+function JornadaAdminCard({ jornada, conocidos, jornadas, ajustes, esActual }) {
   const [nuevoParticipante, setNuevoParticipante] = useState("");
   const [armando, setArmando] = useState(false);
   const showToast = useToast();
@@ -319,13 +319,26 @@ function JornadaAdminCard({ jornada, conocidos, jornadas, ajustes }) {
   };
 
   return (
-    <div className="rounded-2xl p-4" style={{ background: COLORS.canchaAlt, border: `1px solid ${COLORS.linea}` }}>
+    <div
+      className="rounded-2xl p-4"
+      style={{ background: COLORS.canchaAlt, border: `1px solid ${COLORS.linea}`, opacity: esActual ? 1 : 0.7 }}
+    >
       <div className="flex items-center justify-between mb-2">
-        <span className="font-bold" style={{ color: COLORS.crema }}>
-          {jornada.nombre}
-        </span>
         <div className="flex items-center gap-2">
-          <span className="text-xs" style={{ color: COLORS.limaSoft }}>
+          <span className="font-bold" style={{ color: COLORS.crema }}>
+            {jornada.nombre}
+          </span>
+          {esActual && (
+            <span
+              className="text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded"
+              style={{ background: COLORS.lima, color: COLORS.tinta }}
+            >
+              Actual
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="tabular text-xs" style={{ color: COLORS.limaSoft }}>
             {jornada.canchas} {jornada.canchas === 1 ? "cancha" : "canchas"}
           </span>
           <button onClick={handleEliminarJornada} title="Borrar jornada">
@@ -597,8 +610,15 @@ export function AdminScreen({ jornadas, ajustes = [] }) {
       <AjustesDePuntos ajustes={ajustes} conocidos={conocidos} />
 
       <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 lg:items-start">
-        {ordenadas.map((j) => (
-          <JornadaAdminCard key={j.id} jornada={j} conocidos={conocidos} jornadas={jornadas} ajustes={ajustes} />
+        {ordenadas.map((j, i) => (
+          <JornadaAdminCard
+            key={j.id}
+            jornada={j}
+            conocidos={conocidos}
+            jornadas={jornadas}
+            ajustes={ajustes}
+            esActual={i === 0}
+          />
         ))}
       </div>
     </div>

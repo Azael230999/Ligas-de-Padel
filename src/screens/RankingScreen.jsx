@@ -47,7 +47,7 @@ export function RankingScreen({ jornadas, ajustes = [] }) {
       </p>
 
       {temporadas.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
+        <div className="chip-scroll flex gap-2 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
           <Chip active={temporadaFiltro === "todas"} onClick={() => cambiarTemporada("todas")}>
             Todas las temporadas
           </Chip>
@@ -60,7 +60,7 @@ export function RankingScreen({ jornadas, ajustes = [] }) {
       )}
 
       {conGrupos.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-4 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
+        <div className="chip-scroll flex gap-2 overflow-x-auto pb-4 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
           <Chip active={jornadaFiltro === "todas"} onClick={() => setJornadaFiltro("todas")}>
             Todas
           </Chip>
@@ -101,7 +101,7 @@ export function RankingScreen({ jornadas, ajustes = [] }) {
                 onClick={() => setAbierto(abiertoAqui ? null : p.nombre)}
               >
                 <span
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
+                  className="tabular w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
                   style={{
                     background: top3 ? COLORS.tinta : COLORS.lima,
                     color: top3 ? COLORS.lima : COLORS.tinta,
@@ -113,10 +113,10 @@ export function RankingScreen({ jornadas, ajustes = [] }) {
                   {p.nombre}
                 </span>
                 <div className="text-right">
-                  <p className="font-black text-sm leading-none" style={{ color: top3 ? COLORS.tinta : COLORS.crema }}>
+                  <p className="tabular font-black text-sm leading-none" style={{ color: top3 ? COLORS.tinta : COLORS.crema }}>
                     {p.pts} pts
                   </p>
-                  <p className="text-[10px] leading-none mt-1" style={{ color: top3 ? "#2A5651" : COLORS.limaSoft }}>
+                  <p className="tabular text-[10px] leading-none mt-1" style={{ color: top3 ? "#2A5651" : COLORS.limaSoft }}>
                     {p.jornadasJugadas} jornadas
                   </p>
                 </div>
