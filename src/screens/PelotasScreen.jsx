@@ -46,7 +46,7 @@ export function PelotasScreen({ jornadas, admin }) {
         <EmptyState mensaje="No hay jornadas con participantes confirmados todavía." />
       ) : (
         <>
-          <div className="flex gap-2 overflow-x-auto pb-4 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
+          <div className="chip-scroll flex gap-2 overflow-x-auto pb-4 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
             {asignables.map((j) => {
               const resuelto = (j.pelotasAsignados || []).length >= j.canchas;
               return (
@@ -107,7 +107,7 @@ export function PelotasScreen({ jornadas, admin }) {
                   <span className="text-sm font-bold" style={{ color: asignado ? COLORS.tinta : COLORS.crema }}>
                     {p}
                   </span>
-                  <span className="text-[10px] font-bold" style={{ color: asignado ? "#2A5651" : COLORS.limaSoft }}>
+                  <span className="tabular text-[10px] font-bold" style={{ color: asignado ? "#2A5651" : COLORS.limaSoft }}>
                     ·{veces}
                   </span>
                   {asignado && <Check size={13} color={COLORS.tinta} />}
@@ -169,7 +169,7 @@ export function PelotasScreen({ jornadas, admin }) {
             <span className="text-sm font-medium" style={{ color: COLORS.crema }}>
               {p}
             </span>
-            <span className="text-xs font-mono" style={{ color: COLORS.limaSoft }}>
+            <span className="tabular text-xs" style={{ color: COLORS.limaSoft }}>
               {conteo[p] || 0} / {jugadas[p]}
             </span>
           </div>

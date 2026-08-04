@@ -28,7 +28,7 @@ export function PlayerProfileModal({ jornadas, nombre, stats, onClose }) {
         {stats && (
           <div className="grid grid-cols-3 gap-2 mb-5">
             <div className="rounded-xl px-2 py-2.5 text-center" style={{ background: COLORS.canchaAlt }}>
-              <p className="font-black text-base" style={{ color: COLORS.lima }}>
+              <p className="tabular font-black text-base" style={{ color: COLORS.lima }}>
                 {stats.pts}
               </p>
               <p className="text-[10px] font-bold uppercase" style={{ color: COLORS.limaSoft }}>
@@ -36,7 +36,7 @@ export function PlayerProfileModal({ jornadas, nombre, stats, onClose }) {
               </p>
             </div>
             <div className="rounded-xl px-2 py-2.5 text-center" style={{ background: COLORS.canchaAlt }}>
-              <p className="font-black text-base" style={{ color: COLORS.crema }}>
+              <p className="tabular font-black text-base" style={{ color: COLORS.crema }}>
                 {stats.diffGames >= 0 ? "+" : ""}
                 {stats.diffGames}
               </p>
@@ -45,7 +45,7 @@ export function PlayerProfileModal({ jornadas, nombre, stats, onClose }) {
               </p>
             </div>
             <div className="rounded-xl px-2 py-2.5 text-center" style={{ background: COLORS.canchaAlt }}>
-              <p className="font-black text-base" style={{ color: COLORS.crema }}>
+              <p className="tabular font-black text-base" style={{ color: COLORS.crema }}>
                 {stats.jornadasJugadas}
               </p>
               <p className="text-[10px] font-bold uppercase" style={{ color: COLORS.limaSoft }}>

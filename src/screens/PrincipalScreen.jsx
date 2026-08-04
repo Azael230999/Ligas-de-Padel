@@ -73,7 +73,7 @@ export function PrincipalScreen({ jornadas, admin }) {
           Viendo
         </span>
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-5 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
+      <div className="chip-scroll flex gap-2 overflow-x-auto pb-5 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
         {conGrupos.map((j) => (
           <Chip
             key={j.nombre}
@@ -174,7 +174,8 @@ export function PrincipalScreen({ jornadas, admin }) {
                 {nombreGrupo}
               </p>
               {rondas.length === 0 ? (
-                <p className="text-sm px-1" style={{ color: COLORS.limaSoft }}>
+                <p className="flex items-center gap-1.5 text-sm px-1" style={{ color: COLORS.limaSoft }}>
+                  <PelotaIcon size={14} />
                   Sin resultados capturados todavía.
                 </p>
               ) : (

@@ -50,3 +50,25 @@ body {
 .animar-toast {
   animation: toast-in 0.2s ease-out;
 }
+
+/* Filas de chips horizontales (jornadas, temporadas): difumina el borde
+   derecho en vez de cortar el último chip en seco, para que se lea como
+   "desliza para ver más" y no como un bug de layout. */
+.chip-scroll {
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(to right, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 92%, transparent 100%);
+}
+.chip-scroll > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* Números que se comparan entre sí (puntos, posiciones, conteos): ancho
+   tabular para que alineen en columna, sin depender de que la sans-serif
+   tenga cifras de ancho parejo. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+}
