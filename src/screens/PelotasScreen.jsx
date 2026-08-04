@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, CircleDot } from "lucide-react";
-import { Chip } from "../components/Chip";
+import { Desplegable } from "../components/Desplegable";
 import { EmptyState } from "../components/EmptyState";
 import { COLORS } from "../colors";
 import {
@@ -20,7 +20,10 @@ export function PelotasScreen({ jornadas, admin }) {
   const [jornadaNombre, setJornadaNombre] = useState(null);
   const showToast = useToast();
 
-  const jornadaActual = asignables.find((j) => j.nombre === jornadaNombre) ?? asignables[0];
+  // La más reciente (última en orden), para no caer en la más vieja de la
+  // lista por default — mismo fix que ya se hizo en Principal/Ranking.
+  const masReciente = asignables[asignables.length - 1];
+  const jornadaActual = asignables.find((j) => j.nombre === jornadaNombre) ?? masReciente;
   const asignados = new Set(jornadaActual?.pelotasAsignados || []);
 
   const balanceOrdenado = Object.keys(jugadas).sort((a, b) => {
@@ -46,16 +49,21 @@ export function PelotasScreen({ jornadas, admin }) {
         <EmptyState mensaje="No hay jornadas con participantes confirmados todavía." />
       ) : (
         <>
-          <div className="chip-scroll flex gap-2 overflow-x-auto pb-4 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
-            {asignables.map((j) => {
+          <Desplegable
+            eyebrow="Viendo"
+            valorLabel={jornadaActual.nombre}
+            esActualValor={jornadaActual.nombre === masReciente.nombre}
+            opciones={[...asignables].reverse().map((j) => {
               const resuelto = (j.pelotasAsignados || []).length >= j.canchas;
-              return (
-                <Chip key={j.nombre} active={jornadaActual.nombre === j.nombre} onClick={() => setJornadaNombre(j.nombre)}>
-                  {j.nombre} {resuelto ? "✓" : ""}
-                </Chip>
-              );
+              return {
+                id: j.nombre,
+                label: `${j.nombre}${resuelto ? " ✓" : ""}`,
+                actual: j.nombre === masReciente.nombre,
+                seleccionado: j.nombre === jornadaActual.nombre,
+              };
             })}
-          </div>
+            onSeleccionar={setJornadaNombre}
+          />
 
           <div
             className="rounded-2xl px-4 py-3 mb-3 flex items-center justify-between"
