@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Trophy, Users } from "lucide-react";
-import { Chip } from "../components/Chip";
+import { Desplegable } from "../components/Desplegable";
 import { EmptyState } from "../components/EmptyState";
 import { PelotaIcon } from "../components/PelotaIcon";
 import { ResultadoForm } from "../components/ResultadoForm";
@@ -68,23 +68,18 @@ export function PrincipalScreen({ jornadas, admin }) {
 
   return (
     <div className="px-5 pt-6 pb-24">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[11px] uppercase tracking-[0.18em] font-bold" style={{ color: COLORS.lima }}>
-          Viendo
-        </span>
-      </div>
-      <div className="chip-scroll flex gap-2 overflow-x-auto pb-5 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
-        {conGrupos.map((j) => (
-          <Chip
-            key={j.nombre}
-            active={jornadaActual.nombre === j.nombre}
-            onClick={() => setJornadaNombre(j.nombre)}
-            badge={j.nombre === masReciente.nombre ? "Próxima" : null}
-          >
-            {j.nombre}
-          </Chip>
-        ))}
-      </div>
+      <Desplegable
+        eyebrow="Viendo"
+        valorLabel={jornadaActual.nombre}
+        esActualValor={jornadaActual.nombre === masReciente.nombre}
+        opciones={[...conGrupos].reverse().map((j) => ({
+          id: j.nombre,
+          label: j.nombre,
+          actual: j.nombre === masReciente.nombre,
+          seleccionado: j.nombre === jornadaActual.nombre,
+        }))}
+        onSeleccionar={setJornadaNombre}
+      />
 
       {pelotasPorCancha.length > 0 && (
         <div
