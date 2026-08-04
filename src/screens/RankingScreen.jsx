@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Trophy } from "lucide-react";
-import { Chip } from "../components/Chip";
+import { Desplegable } from "../components/Desplegable";
 import { EmptyState } from "../components/EmptyState";
 import { PlayerProfileModal } from "../components/PlayerProfileModal";
 import { COLORS } from "../colors";
@@ -8,7 +8,13 @@ import { calcularRanking, jornadasConGrupos } from "../data";
 
 export function RankingScreen({ jornadas, ajustes = [] }) {
   const temporadas = [...new Set(jornadas.filter((j) => j.temporada).map((j) => j.temporada))];
-  const [temporadaFiltro, setTemporadaFiltro] = useState("todas");
+  // La temporada de la jornada más reciente (si tiene una asignada), para
+  // que el ranking abra mostrando la temporada que se está jugando en vez
+  // de "Todas".
+  const conGruposGlobal = jornadasConGrupos(jornadas);
+  const temporadaActual = conGruposGlobal[conGruposGlobal.length - 1]?.temporada || "todas";
+
+  const [temporadaFiltro, setTemporadaFiltro] = useState(temporadaActual);
   const [jornadaFiltro, setJornadaFiltro] = useState("todas");
   const [abierto, setAbierto] = useState(null);
   const [perfil, setPerfil] = useState(null);
@@ -16,6 +22,7 @@ export function RankingScreen({ jornadas, ajustes = [] }) {
   const jornadasDeTemporada =
     temporadaFiltro === "todas" ? jornadas : jornadas.filter((j) => j.temporada === temporadaFiltro);
   const conGrupos = jornadasConGrupos(jornadasDeTemporada);
+  const masRecienteEnTemporada = conGrupos[conGrupos.length - 1];
 
   const jornadasParaRanking = jornadaFiltro === "todas" ? jornadasDeTemporada : conGrupos.filter((j) => j.id === jornadaFiltro);
   const ranking = calcularRanking(jornadasParaRanking, ajustes);
@@ -47,29 +54,46 @@ export function RankingScreen({ jornadas, ajustes = [] }) {
       </p>
 
       {temporadas.length > 0 && (
-        <div className="chip-scroll flex gap-2 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
-          <Chip active={temporadaFiltro === "todas"} onClick={() => cambiarTemporada("todas")}>
-            Todas las temporadas
-          </Chip>
-          {temporadas.map((t) => (
-            <Chip key={t} active={temporadaFiltro === t} onClick={() => cambiarTemporada(t)}>
-              {t}
-            </Chip>
-          ))}
-        </div>
+        <Desplegable
+          eyebrow="Temporada"
+          valorLabel={temporadaFiltro === "todas" ? "Todas las temporadas" : temporadaFiltro}
+          esActualValor={temporadaFiltro !== "todas" && temporadaFiltro === temporadaActual}
+          opciones={[
+            ...(temporadaActual !== "todas"
+              ? [
+                  {
+                    id: temporadaActual,
+                    label: temporadaActual,
+                    actual: true,
+                    seleccionado: temporadaFiltro === temporadaActual,
+                  },
+                ]
+              : []),
+            ...temporadas
+              .filter((t) => t !== temporadaActual)
+              .map((t) => ({ id: t, label: t, actual: false, seleccionado: temporadaFiltro === t })),
+            { id: "todas", label: "Todas las temporadas", actual: false, seleccionado: temporadaFiltro === "todas" },
+          ]}
+          onSeleccionar={cambiarTemporada}
+        />
       )}
 
       {conGrupos.length > 0 && (
-        <div className="chip-scroll flex gap-2 overflow-x-auto pb-4 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
-          <Chip active={jornadaFiltro === "todas"} onClick={() => setJornadaFiltro("todas")}>
-            Todas
-          </Chip>
-          {conGrupos.map((j) => (
-            <Chip key={j.id} active={jornadaFiltro === j.id} onClick={() => setJornadaFiltro(j.id)}>
-              {j.nombre}
-            </Chip>
-          ))}
-        </div>
+        <Desplegable
+          eyebrow="Viendo"
+          valorLabel={jornadaFiltro === "todas" ? "Ranking completo" : conGrupos.find((j) => j.id === jornadaFiltro)?.nombre ?? "Ranking completo"}
+          esActualValor={false}
+          opciones={[
+            { id: "todas", label: "Ranking completo", actual: false, seleccionado: jornadaFiltro === "todas" },
+            ...[...conGrupos].reverse().map((j) => ({
+              id: j.id,
+              label: j.nombre,
+              actual: j.id === masRecienteEnTemporada?.id,
+              seleccionado: jornadaFiltro === j.id,
+            })),
+          ]}
+          onSeleccionar={setJornadaFiltro}
+        />
       )}
 
       {posibleDescenso && (
